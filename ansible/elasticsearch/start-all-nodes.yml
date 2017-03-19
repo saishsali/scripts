@@ -1,0 +1,8 @@
+---
+- hosts: es_cluster
+  become: yes
+  tasks:
+    - name: Start Elasticsearch
+      service:
+        name: elasticsearch
+        state: started

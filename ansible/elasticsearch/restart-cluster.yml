@@ -1,0 +1,23 @@
+---
+- hosts: es_cluster
+  become: yes
+  max_fail_percentage: 10
+  serial: 5
+  tasks:
+    - name: Reboot Machine
+      shell: reboot
+      async: 0
+      poll: 0
+
+    - name: Wait for reboot to complete
+      local_action:
+        module: wait_for
+          host="{{ ansible_host }}"
+          delay=30
+          timeout=60
+          state=started
+
+    - name: Make sure ES running
+      service:
+        name: elasticsearch
+        state: started

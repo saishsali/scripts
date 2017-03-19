@@ -1,0 +1,6 @@
+---
+# Elasticsearch Setup Ansible Playbook
+- hosts: es_cluster
+  become: yes
+  roles:
+    - es_cluster_install

@@ -1,0 +1,15 @@
+---
+# Elasticsearch Ansible Tasks
+# Install Java
+- include: java.yml
+  when: elasticsearch_install_java
+# Configure timezome
+- include: timezone.yml
+# Configure system settings before installing ES
+- include: sysconf.yml
+# Install and configure elasticsearch
+- include: elasticsearch.yml
+# Install xpack
+- include: xpack.yml
+# Always run post-run tasks
+- include: post-run.yml

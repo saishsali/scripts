@@ -1,0 +1,12 @@
+---
+# Elasticsearch Status Ansible Playbook
+- hosts: es_cluster
+  become: yes
+
+  tasks:
+    - name: Get Elasticsearch Status
+      shell: service elasticsearch status
+      register: elasticsearchStatus
+
+    - name: Print Elasticsearch Status
+      debug: "msg='{{ elasticsearchStatus.stdout_lines }}'"

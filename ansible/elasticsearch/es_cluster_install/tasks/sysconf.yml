@@ -1,0 +1,80 @@
+---
+
+- name: sysconf | Configuring elastic group
+  group:
+    name={{ elasticsearch_group }}
+
+- name: sysconf | Configuring elastic user
+  user:
+    name={{ elasticsearch_user }}
+    group={{ elasticsearch_group }}
+    createhome=no
+
+- name: sysconf | Configure limits max_open_files
+  lineinfile:
+    dest=/etc/security/limits.conf
+    regexp='^{{ elasticsearch_user }}     -    nofile    {{ elasticsearch_max_open_files }}'
+    insertafter=EOF
+    line='{{ elasticsearch_user }}     -    nofile    {{ elasticsearch_max_open_files }}'
+  when: elasticsearch_max_open_files is defined
+
+- name: sysconf | Configure limits root max_threads
+  lineinfile:
+    dest=/etc/security/limits.conf
+    regexp='^root     -    nproc    {{ elasticsearch_max_threads }}'
+    insertafter=EOF
+    line='root     -    nproc    {{ elasticsearch_max_threads }}'
+  when: elasticsearch_max_threads is defined
+
+- name: sysconf | Configure limits elasticsearch max_threads
+  lineinfile:
+    dest=/etc/security/limits.conf
+    regexp='^{{ elasticsearch_user }}     -    nproc    {{ elasticsearch_max_threads }}'
+    insertafter=EOF
+    line='{{ elasticsearch_user }}     -    nproc    {{ elasticsearch_max_threads }}'
+  when: elasticsearch_max_threads is defined
+
+- name: sysconf | Configure limits max_locked_memory
+  lineinfile:
+    dest=/etc/security/limits.conf
+    regexp='^{{ elasticsearch_user }}     -    memlock   {{ elasticsearch_max_locked_memory }}'
+    insertafter=EOF
+    line='{{ elasticsearch_user }}     -    memlock   {{ elasticsearch_max_locked_memory }}'
+  when: elasticsearch_max_locked_memory is defined
+
+- name: sysconf | Maximum map count
+  lineinfile:
+    dest=/etc/sysctl.conf
+    insertafter=EOF
+    line='vm.max_map_count = 262144'
+
+- name: sysconf | Disable swap
+  command: sed -i '/ swap / s/^/#/' /etc/fstab
+
+- name: sysconf | Configure su pam_limits.so
+  lineinfile:
+    dest=/etc/pam.d/su
+    regexp='^session    required   pam_limits.so'
+    insertafter=EOF
+    line='session    required   pam_limits.so'
+
+- name: sysconf | Configure common-session pam_limits.so
+  lineinfile:
+    dest=/etc/pam.d/common-session
+    regexp='^session    required   pam_limits.so'
+    insertafter=EOF
+    line='session    required   pam_limits.so'
+
+- name: sysconf | Configure common-session-noninteractive pam_limits.so
+  lineinfile:
+    dest=/etc/pam.d/common-session-noninteractive
+    regexp='^session    required   pam_limits.so'
+    insertafter=EOF
+    line='session    required   pam_limits.so'
+
+- name: sysconf | Configure sudo pam_limits.so
+  lineinfile:
+    dest=/etc/pam.d/sudo
+    regexp='^session    required   pam_limits.so'
+    insertafter=EOF
+    line='session    required   pam_limits.so'
