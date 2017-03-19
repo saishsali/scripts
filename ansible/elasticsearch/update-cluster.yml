@@ -8,7 +8,7 @@
   tasks:
     - name: elastic-install | Configuring Elasticsearch elasticsearch.yml Node
       template:
-        src=templates/elasticsearch.yml.j2
+        src=es_cluster_install/templates/elasticsearch.yml.j2
         dest={{ elasticsearch_conf_dir }}/elasticsearch.yml
         owner={{ elasticsearch_user }}
         group={{ elasticsearch_group }}
@@ -18,7 +18,7 @@
 
     - name : elastic-install | Configure /etc/default/elasticsearch
       template:
-        src=templates/elasticsearch.default.j2
+        src=es_cluster_install/templates/elasticsearch.default.j2
         dest=/etc/default/elasticsearch
         owner={{ elasticsearch_user }}
         group={{ elasticsearch_group }}
