@@ -1,9 +1,17 @@
 ---
 - hosts: es_cluster
   become: yes
-  max_fail_percentage: 10
   serial: 5
   tasks:
+    - name: Stop ES
+      service:
+        name: elasticsearch
+        state: stopped
+
+    - name: Stop all processes started by ES
+      command: pkill -u elasticsearch
+      become: yes
+
     - name: Reboot Machine
       shell: reboot
       async: 0
@@ -17,7 +25,18 @@
           timeout=60
           state=started
 
-    - name: Make sure ES running
+    - name: Make sure ES is running
+      command: service elasticsearch status
+      become: yes
+      register: status
+
+    - name: Stop all processes started by ES
+      command: pkill -u elasticsearch
+      become: yes
+      when: status|failed
+
+    - name: Start ES
       service:
         name: elasticsearch
         state: started
+      when: status|failed
