@@ -18,8 +18,6 @@ var client = new es.Client({
       "192.168.0.225:9200","192.168.0.226:9200","192.168.0.227:9200",
       "192.168.0.228:9200","192.168.0.229:9200"
   ],
-  //sniffOnStart: true,
-  //sniffInterval: 100000,
   maxSockets: 200
 });
 
@@ -70,8 +68,8 @@ function lookupSOA(req, res) {
 }
 
 function lookupNS(req, res) {
-  if(config.DEBUG)
-    console.log('NS recieved');
+  if(!config.DEBUG)
+    console.log('NS recieved: ' + req.params.originalDomain);
   //Domain
   var domain = req.params.originalDomain.toUpperCase();
   //QueryJSON for ES
@@ -85,7 +83,7 @@ function lookupNS(req, res) {
   };
   //Contact ES using promise.
   client.get(queryJSON).then( (resp) => {
-    if(config.DEBUG)
+    if(!config.DEBUG)
       console.log(resp);
     //Response found
     if(resp.found) {
@@ -96,21 +94,29 @@ function lookupNS(req, res) {
         return {qtype: config.NS_TYPE, qname: req.params.originalDomain, content: ns, ttl: config.TTL};
       });
       var domains_to_query = [];
-      async.each(record.name_servers, (current_domain, callback) => {
+      async.each(record.name_servers, (nameserver, callback) => {
         //Check memcached
-        memcached.getAsync(current_domain).then( (data) => { //Result
+        memcached.getAsync(nameserver).then( (data) => { //Result
           if(data == undefined) {
             //Need to query for this domain
-            domains_to_query.push(current_domain);
+            domains_to_query.push(nameserver);
           } else {
+            //Put glue A record in response
+            if (data != 'NOTFOUND') {
+              result.result.push({
+                qtype: config.A_TYPE,
+                qname: nameserver,
+                content: data,
+                ttl: config.TTL
+              });
+            }
             //Increase TTL
-            memcached.touch(current_domain, config.CACHE_TIMEOUT, function(err) {
-              if (err)
-                return err_resp(res, err);
+            memcached.touch(nameserver, config.CACHE_TIMEOUT, (err) => {
+              if (err) return err_resp(res, err);
             });
           }
           callback();
-        }).catch(function (err) { //Error
+        }).catch( (err) => { //Error
           return err_resp(res, err);
         });
       },
@@ -122,10 +128,10 @@ function lookupNS(req, res) {
           console.log(domains_to_query);
         if(domains_to_query.length != 0) {
           docs = [];
-          for (var domain in domains_to_query) {
+          for (let i = 0; i < domains_to_query.length; i++) {
             docs.push({
-              _id: domain,
-              _routing: domain
+              _id: domains_to_query[i],
+              _routing: domains_to_query[i]
             });
           }
           var queryJSON = {
@@ -138,13 +144,21 @@ function lookupNS(req, res) {
             }
           };
           client.mget(queryJSON).then( (es_resp) => {
-            if(!config.DEBUG)
-              console.log(es_resp);
-            for (var record in es_resp.docs) {
+            for (let i = 0; i < es_resp.docs.length; i++) {
+              var record = es_resp.docs[i];
+              if(!config.DEBUG)
+                console.log(record)
               if (record.found) {
                 var data = record.fields;
+                //Put glue A record in response
+                result.result.push({
+                  qtype: config.A_TYPE,
+                  qname: data.domain_name_exact[0],
+                  content: data.ip_address[0],
+                  ttl: config.TTL
+                });
                 // Add to cache
-                memcached.set(data.domain_name_exact, data.ip_address[0], config.CACHE_TIMEOUT, (err) => {
+                memcached.set(data.domain_name_exact[0], data.ip_address[0], config.CACHE_TIMEOUT, (err) => {
                   if(err) return err_resp(res, err);
                   if(!config.DEBUG)
                     console.log('memcached - ' + data.domain_name_exact)
@@ -152,13 +166,16 @@ function lookupNS(req, res) {
               }
               else {
                 // Add to negative cache
-                memcached.set(data.domain_name_exact, 'NOTFOUND', config.CACHE_TIMEOUT, (err) => {
+                memcached.set(record._id, 'NOTFOUND', config.CACHE_TIMEOUT, (err) => {
                   if(err) return err_resp(res, err);
                   if(!config.DEBUG)
                     console.log('memcached + ' + data.domain_name_exact)
                 });
               }
             }
+            if(!config.DEBUG)
+              console.log(result);
+            return res_json(res, result);
           }).catch( (es_err) => { //ES Get Error
             return err_resp(res, es_err);
           });
@@ -173,7 +190,7 @@ function lookupNS(req, res) {
     else {
       return res_json(res, {result: false});
     }
-  }).catch( (err) {
+  }).catch( (err) => {
     if(err.status !== 404) {
       console.trace(err.message);
     }
@@ -187,7 +204,7 @@ function lookupNS(req, res) {
 
 function lookupA(req, res) {
   if(!config.DEBUG)
-    console.log('A recieved');
+    console.log('A recieved: ' + req.params.originalDomain);
   var domain = req.params.originalDomain.toUpperCase();
   memcached.getAsync(domain).then( (data) => {
     if (data === undefined) {
@@ -201,13 +218,12 @@ function lookupA(req, res) {
       };
       client.get(queryJSON).then( (resp) => { // ES get response
         if (resp.found) {
-          var record = resp._source;
-          var tmp_ip_address = record.ip_address[0];
+          var record = resp.fields;
           var result = {
             result: [{
               qtype: config.A_TYPE,
               qname: domain,
-              content: data,
+              content: record.ip_address[0],
               ttl: config.TTL
             }]
           };
@@ -215,7 +231,7 @@ function lookupA(req, res) {
             console.log("A - Cache miss - Found");
             console.log(result);
           }
-          res_json(res, result);
+          return res_json(res, result);
         } else {
           //No result found.
           res_json(res, {result: false});

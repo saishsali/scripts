@@ -1,6 +1,6 @@
 //Configuration file for REST API
 //Dummy response for SOA
-exports.DUMMY_SOA = 'a.myownserver. b.myownserver. 1465277297 1800 900 604800 86400';
+exports.DUMMY_SOA = 'a.myownserver. b.myownserver. 1465277297 3600 900 604800 86400';
 
 //Request Type
 exports.A_TYPE = 'A';
@@ -18,7 +18,7 @@ exports.DOMAIN_QUERY = 'domain_name_exact:';
 
 //Time settings
 exports.CACHE_TIMEOUT = 90;
-exports.TTL = 30;
+exports.TTL = 60;
 
 //Debug settings
 exports.DEBUG = true;
