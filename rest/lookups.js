@@ -18,7 +18,7 @@ var client = new es.Client({
       "192.168.0.225:9200","192.168.0.226:9200","192.168.0.227:9200",
       "192.168.0.228:9200","192.168.0.229:9200"
   ],
-  maxSockets: 200
+  maxSockets: 20
 });
 
 //Look up SOA Record
@@ -112,12 +112,18 @@ function lookupNS(req, res) {
             }
             //Increase TTL
             memcached.touch(nameserver, config.CACHE_TIMEOUT, (err) => {
-              if (err) return err_resp(res, err);
+              if (err) {
+                console.error(err);
+                console.trace(err);
+                throw err;
+              }
             });
           }
           callback();
         }).catch( (err) => { //Error
-          return err_resp(res, err);
+          console.error(err);
+          console.trace(err);
+          throw err;
         });
       },
       (err) => { //Async competed/failed
@@ -159,7 +165,11 @@ function lookupNS(req, res) {
                 });
                 // Add to cache
                 memcached.set(data.domain_name_exact[0], data.ip_address[0], config.CACHE_TIMEOUT, (err) => {
-                  if(err) return err_resp(res, err);
+                  if(err) {
+                    console.error(error);
+                    console.trace(err);
+                    throw err;
+                  }
                   if(!config.DEBUG)
                     console.log('memcached - ' + data.domain_name_exact)
                 });
@@ -167,7 +177,11 @@ function lookupNS(req, res) {
               else {
                 // Add to negative cache
                 memcached.set(record._id, 'NOTFOUND', config.CACHE_TIMEOUT, (err) => {
-                  if(err) return err_resp(res, err);
+                  if(err) {
+                    console.error(error);
+                    console.trace(err);
+                    throw err;
+                  }
                   if(!config.DEBUG)
                     console.log('memcached + ' + data.domain_name_exact)
                 });
