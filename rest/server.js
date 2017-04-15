@@ -30,12 +30,7 @@ var client = new es.Client({
   ],
   maxSockets: 20
 });
-//Cluster-mode
-const cluster = require('cluster');
-const http = require('http');
-const numCPUs = 4;//require('os').cpus().length;
 
-//Look up SOA Record
 function lookupSOA(req, res) {
   if(!config.DEBUG)
     console.log('SOA recieved: ' + req.params.originalDomain);
@@ -306,33 +301,20 @@ function res_json(res, json) {
   return res.json(json);
 }
 
-if (cluster.isMaster) {
-  console.log(`Master ${process.pid} is running`);
+//Lookup callbacks are in the lookups.js file.
+//A lookup
+router.get('/:originalDomain/A', lookupA);
+//NS lookup
+router.get('/:originalDomain/NS', lookupNS);
+//SOA lookup
+router.get('/:originalDomain/SOA', lookupSOA);
 
-  // Fork workers.
-  for (let i = 0; i < numCPUs; i++) {
-    cluster.fork();
-  }
+//Mount router on app
+app.use('/api/lookup', router);
+//Set port
+var port = process.env.PORT || 8080;        // set our port
+app.use(bodyParser.urlencoded({ extended: false }));
+//Start server
+app.listen(port);
 
-  cluster.on('exit', (worker, code, signal) => {
-    console.log(`worker ${worker.process.pid} died`);
-  });
-} else {
-  //Lookup callbacks are in the lookups.js file.
-  //A lookup
-  router.get('/:originalDomain/A', lookupA);
-  //NS lookup
-  router.get('/:originalDomain/NS', lookupNS);
-  //SOA lookup
-  router.get('/:originalDomain/SOA', lookupSOA);
-
-  //Mount router on app
-  app.use('/api/lookup', router);
-  //Set port
-  var port = process.env.PORT || 8080;        // set our port
-  app.use(bodyParser.urlencoded({ extended: false }));
-  //Start server
-  app.listen(port);
-
-  console.log('Magic happens on port ' + port);
-}
+console.log('Magic happens on port ' + port);
