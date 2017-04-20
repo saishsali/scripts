@@ -15,7 +15,7 @@
     enabled: yes
 
 - name: Clone git repo
-  become: ubuntu
+  become_user: ubuntu
   git:
     repo: ssh://git@github.com:dnsanalytics/scripts.git
     dest: "{{ repo_location }}"
