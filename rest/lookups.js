@@ -88,7 +88,7 @@ function lookupNS(req, res) {
       var domains_to_query = [];
       asynclib.each(record.name_servers, (nameserver, callback) => {
         //Check memcached
-        memcached.get(nameserver), (err, data) => { //Result
+        memcached.get(nameserver, (err, data) => { //Result
           if (err) {
             console.error(err);
             console.trace(err);
