@@ -1,0 +1,53 @@
+---
+- name: Clone git repo
+  git:
+    repo: ssh://git@github.com:dnsanalytics/scripts.git
+    dest: {{ repo_location }}
+
+- name: Install Memcached
+  apt:
+    name: memcached
+    update_cache: yes
+
+- name: Ensure Memcached is started and set to run on startup.
+  service:
+    name: memcached
+    state: started
+    enabled: yes
+
+- name: Add Node.js PPA
+  shell: "curl --silent --location https://deb.nodesource.com/setup_{{ nodejs_version }} | bash -"
+
+- name: Install Node.js
+  apt:
+    name: nodejs
+    update_cache: yes
+    state: latest
+
+- name: npm Update
+  npm:
+    name: npm
+    global: yes
+    state: latest
+    registry: https://registry.npmjs.org
+
+- name: Install pm2
+  npm:
+    name: pm2
+    global: yes
+    state: latest
+
+- name: pm2 Start Up settings
+  shell: pm2 startup
+
+- name: Install REST Dependencies
+  npm:
+    path: {{ repo_location }}/rest
+
+- name: Start API
+  shell: pm2 start server.js -i 0 --watch --name lookup-api
+  args:
+    chdir: {{ repo_location }}/rest
+
+- name: Save pm2 settings for start on reboot
+  shell: pm2 save
