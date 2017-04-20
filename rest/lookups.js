@@ -1,11 +1,11 @@
 var express = require('express');
 var router = express.Router();
-var Promise = require('bluebird');
 var config = require('./config');
 var asynclib = require('async');
 //Memcached
 var Memcached = require('memcached');
-var memcached = Promise.promisifyAll(new Memcached('127.0.0.1'));
+Memcached.config.poolSize = config.POOL_SIZE;
+var memcached = new Memcached('127.0.0.1');
 //Elasticsearch
 var es     = require('elasticsearch');
 var client = new es.Client({
@@ -88,7 +88,12 @@ function lookupNS(req, res) {
       var domains_to_query = [];
       asynclib.each(record.name_servers, (nameserver, callback) => {
         //Check memcached
-        memcached.getAsync(nameserver).then( (data) => { //Result
+        memcached.get(nameserver), (err, data) => { //Result
+          if (err) {
+            console.error(err);
+            console.trace(err);
+            throw err;
+          }
           if(data == undefined) {
             //Need to query for this domain
             domains_to_query.push(nameserver);
@@ -112,10 +117,6 @@ function lookupNS(req, res) {
             });
           }
           callback();
-        }).catch( (err) => { //Error
-          console.error(err);
-          console.trace(err);
-          throw err;
         });
       },
       (err) => { //Async competed/failed
@@ -212,7 +213,10 @@ function lookupA(req, res) {
   if(!config.DEBUG)
     console.log('A recieved: ' + req.params.originalDomain);
   var domain = req.params.originalDomain.toUpperCase();
-  memcached.getAsync(domain).then( (data) => {
+  memcached.get(domain), (err, data) => {
+    if (err) {
+      return err_resp(res, err);
+    }
     if (data === undefined) {
       var queryJSON = {
         index: config.INDEX,
@@ -245,9 +249,7 @@ function lookupA(req, res) {
             console.log("A - Cache miss - Not Found");
         }
       }).catch( (err) => { // ES get error
-        if (!config.DEBUG)
-          console.log("A - Cache miss - Error");
-        return err_resp(res, err);
+
       });
     }
     else if (data !== 'NOTFOUND') { //Positive cache hit.
@@ -270,8 +272,6 @@ function lookupA(req, res) {
         console.log("A - Cache hit - Negative");
       return res_json(res, {result: false});
     }
-  }).catch( (err) => {
-    return err_resp(res, err);
   });
 }
 

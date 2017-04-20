@@ -37,6 +37,8 @@ exports.HOSTS = [
     "192.168.0.225:9200","192.168.0.226:9200","192.168.0.227:9200",
     "192.168.0.228:9200","192.168.0.229:9200"
 ];
+//Memcached settings
+exports.POOL_SIZE = 25;
 
 
 module.exports = exports;
