@@ -42,12 +42,12 @@
 
 - name: Install REST Dependencies
   npm:
-    path: "{{ repo_location }}"/rest
+    path: "{{ server_location }}"
 
 - name: Start API
   shell: pm2 start server.js -i 0 --watch --name lookup-api
   args:
-    chdir: "{{ repo_location }}"/rest
+    chdir: "{{ server_location }}"
 
 - name: Save pm2 settings for start on reboot
   shell: pm2 save
