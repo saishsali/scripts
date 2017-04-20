@@ -213,7 +213,7 @@ function lookupA(req, res) {
   if(!config.DEBUG)
     console.log('A recieved: ' + req.params.originalDomain);
   var domain = req.params.originalDomain.toUpperCase();
-  memcached.get(domain), (err, data) => {
+  memcached.get(domain, (err, data) => {
     if (err) {
       return err_resp(res, err);
     }
@@ -249,7 +249,9 @@ function lookupA(req, res) {
             console.log("A - Cache miss - Not Found");
         }
       }).catch( (err) => { // ES get error
-
+        if (!config.DEBUG)
+          console.log("A - Cache miss - Error");
+        return err_resp(res, err);
       });
     }
     else if (data !== 'NOTFOUND') { //Positive cache hit.
