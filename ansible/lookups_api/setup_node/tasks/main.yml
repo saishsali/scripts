@@ -18,6 +18,7 @@
   git:
     repo: ssh://git@github.com:dnsanalytics/scripts.git
     dest: "{{ repo_location }}"
+    accept_hostkey: yes
 
 - name: Add Node.js PPA
   shell: 'curl --silent --location https://deb.nodesource.com/setup_"{{ nodejs_version }}" | bash -'
