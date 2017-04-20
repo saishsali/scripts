@@ -1,24 +1,16 @@
+var express = require('express');
+var router = express.Router();
 var Promise = require('bluebird');
 var config = require('./config');
-var async = require('async');
+var asynclib = require('async');
 //Memcached
 var Memcached = require('memcached');
 var memcached = Promise.promisifyAll(new Memcached('127.0.0.1'));
 //Elasticsearch
 var es     = require('elasticsearch');
 var client = new es.Client({
-  hosts: [
-      "192.168.0.204:9200","192.168.0.21:9200","192.168.0.22:9200",
-      "192.168.0.23:9200","192.168.0.205:9200","192.168.0.206:9200",
-      "192.168.0.208:9200","192.168.0.209:9200","192.168.0.210:9200",
-      "192.168.0.212:9200","192.168.0.213:9200","192.168.0.214:9200",
-      "192.168.0.215:9200","192.168.0.216:9200","192.168.0.217:9200",
-      "192.168.0.218:9200","192.168.0.219:9200","192.168.0.221:9200",
-      "192.168.0.222:9200","192.168.0.223:9200","192.168.0.224:9200",
-      "192.168.0.225:9200","192.168.0.226:9200","192.168.0.227:9200",
-      "192.168.0.228:9200","192.168.0.229:9200"
-  ],
-  maxSockets: 20
+  hosts: config.HOSTS,
+  maxSockets: config.MAX_SOCKETS
 });
 
 //Look up SOA Record
@@ -94,7 +86,7 @@ function lookupNS(req, res) {
         return {qtype: config.NS_TYPE, qname: req.params.originalDomain, content: ns, ttl: config.TTL};
       });
       var domains_to_query = [];
-      async.each(record.name_servers, (nameserver, callback) => {
+      asynclib.each(record.name_servers, (nameserver, callback) => {
         //Check memcached
         memcached.getAsync(nameserver).then( (data) => { //Result
           if(data == undefined) {
@@ -292,8 +284,12 @@ function res_json(res, json) {
   return res.json(json);
 }
 
-exports.SOA = lookupSOA;
-exports.NS = lookupNS;
-exports.A = lookupA;
+//Lookup callbacks are in the lookups.js file.
+//SOA lookup
+router.get('/:originalDomain/SOA', lookupSOA);
+//NS lookup
+router.get('/:originalDomain/NS', lookupNS);
+//A lookup
+router.get('/:originalDomain/A', lookupA);
 
-module.exports = exports;
+module.exports = router;
