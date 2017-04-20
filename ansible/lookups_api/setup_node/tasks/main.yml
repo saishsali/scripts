@@ -16,7 +16,7 @@
     enabled: yes
 
 - name: Add Node.js PPA
-  shell: "curl --silent --location https://deb.nodesource.com/setup_{{ nodejs_version }} | bash -"
+  shell: 'curl --silent --location https://deb.nodesource.com/setup_"{{ nodejs_version }}" | bash -'
 
 - name: Install Node.js
   apt:
@@ -42,12 +42,12 @@
 
 - name: Install REST Dependencies
   npm:
-    path: {{ repo_location }}/rest
+    path: "{{ repo_location }}"/rest
 
 - name: Start API
   shell: pm2 start server.js -i 0 --watch --name lookup-api
   args:
-    chdir: {{ repo_location }}/rest
+    chdir: "{{ repo_location }}"/rest
 
 - name: Save pm2 settings for start on reboot
   shell: pm2 save
