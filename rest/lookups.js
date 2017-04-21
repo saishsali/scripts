@@ -5,11 +5,11 @@ var asynclib = require('async');
 //Memcached
 var Memcached = require('memcached');
 Memcached.config.poolSize = config.POOL_SIZE;
-var memcached = new Memcached('127.0.0.1');
+var memcached = new Memcached(config.MEMCACHED_HOSTS);
 //Elasticsearch
 var es     = require('elasticsearch');
 var client = new es.Client({
-  hosts: config.HOSTS,
+  hosts: config.ES_HOSTS,
   maxSockets: config.MAX_SOCKETS
 });
 
