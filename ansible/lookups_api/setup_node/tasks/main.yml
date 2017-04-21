@@ -45,15 +45,19 @@
 
 - name: pm2 Start Up settings
   shell: pm2 startup
+  become_user: ubuntu
 
 - name: Install REST Dependencies
+  become_user: ubuntu
   npm:
     path: "{{ server_location }}"
 
 - name: Start API
   shell: pm2 start server.js -i 0 --watch --name lookup-api
+  become_user: ubuntu
   args:
     chdir: "{{ server_location }}"
 
 - name: Save pm2 settings for start on reboot
   shell: pm2 save
+  become_user: ubuntu
