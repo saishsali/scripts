@@ -45,7 +45,6 @@
 
 - name: pm2 Start Up settings
   shell: pm2 startup
-  become_user: ubuntu
 
 - name: Install REST Dependencies
   become_user: ubuntu
