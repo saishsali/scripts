@@ -18,10 +18,9 @@
 - name: Clone git repo
   become_user: ubuntu
   git:
-    repo: ssh://git@github.com:dnsanalytics/scripts.git
+    repo: https://github.com/dnsanalytics/scripts.git
     dest: "{{ repo_location }}"
     accept_hostkey: yes
-    key_file: ../../../setup/ssh-keys/id_rsa
 
 - name: Add Node.js PPA
   shell: 'curl --silent --location https://deb.nodesource.com/setup_"{{ nodejs_version }}" | bash -'
