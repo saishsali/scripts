@@ -1,4 +1,5 @@
 ---
+
 - name: Install git
   apt:
     name: git
@@ -41,7 +42,6 @@
   npm:
     name: pm2
     global: yes
-    state: latest
 
 - name: pm2 Start Up settings
   shell: pm2 startup
