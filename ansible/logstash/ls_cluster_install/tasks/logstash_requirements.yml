@@ -1,14 +1,14 @@
 ---
 - name: Install Python utils
   apt:
-    pkg: {{ item.package }}
+    pkg: "{{ item.package }}"
     update_cache: yes
     state: latest
   with_items: "{{logstash_python_utils}}"
 
 - name: Install dependencies
   apt:
-    pkg: {{ item }}
+    pkg: "{{ item }}"
     state: present
   with_items: "{{logstash_apt_dependencies}}"
 
@@ -18,14 +18,14 @@
 
 - name: java | Update repositories
   apt_repository:
-    repo: {{ item }}
+    repo: "{{ item }}"
     state: present
     update_cache: yes
   with_items: "{{java_apt_repos}}"
 
 - name: java | Install dependencies
   apt:
-    pkg: {{apt_java_package}}
+    pkg: "{{apt_java_package}}"
     state: present
 
 - name: Install haveged for increase in entropy
