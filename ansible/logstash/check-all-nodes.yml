@@ -1,0 +1,11 @@
+---
+- hosts: logstash_nodes
+  become: yes
+  
+  tasks:
+    - name: Get Logstash Status
+      shell: service logstash status
+      register: logstashStatus
+
+    - name: Print Logstash Status
+      debug: "msg='{{ logstashStatus.stdout_lines }}'"

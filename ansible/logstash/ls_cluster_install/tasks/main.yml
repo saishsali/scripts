@@ -1,0 +1,21 @@
+---
+# tasks file for logstash-role
+
+- include: logstash_requirements.yml
+  tags:
+   - logstash_req
+
+- name: Stop Logstash before upgrading
+  service: name=logstash
+           state=stopped
+  ignore_errors: yes
+
+- include: logstash_installation.yml
+  notify: Restart Logstash
+
+- name: Configure limits max_open_files
+  lineinfile:
+    dest=/etc/security/limits.conf
+    regexp='^{{ logstash_user }}     -    nofile    {{ logstash_max_open_files }}'
+    insertafter=EOF
+    line='{{ logstash_user }}     -    nofile    {{ logstash_max_open_files }}'

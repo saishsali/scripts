@@ -1,0 +1,13 @@
+---
+- hosts: logstash
+  become: yes
+  tasks:
+    - name: Restart logstash_delta
+      service:
+        name: logstash_delta
+        state: restarted
+
+    - name: Restart logstash_initial
+      service:
+        name: logstash_initial
+        state: restarted

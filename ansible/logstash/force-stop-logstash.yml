@@ -1,0 +1,7 @@
+---
+- hosts: logstash_nodes
+  become: yes
+
+  tasks:
+    - name: Stop logstash service
+      shell: service logstash stop

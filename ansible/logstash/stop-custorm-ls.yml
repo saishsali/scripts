@@ -1,0 +1,9 @@
+---
+- hosts: logstash
+  become: yes
+
+  tasks:
+    - name: Restart logstash service
+      service:
+        name: {{ service }}
+        state: stopped

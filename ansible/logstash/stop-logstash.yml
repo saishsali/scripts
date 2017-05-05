@@ -1,0 +1,14 @@
+---
+- hosts: logstash
+  become: yes
+
+  tasks:
+    - name: Stop logstash_delta
+      service:
+        name: logstash_delta
+        state: stopped
+
+    - name: Stop logstash_initial
+      service:
+        name: logstash_initial
+        state: stopped

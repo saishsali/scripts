@@ -1,0 +1,25 @@
+---
+# defaults file for logstash-role
+
+logstash_python_utils:
+ - { package: "python-pycurl" }
+ - { package: "python-apt" }
+
+logstash_apt_dependencies:
+  - htop
+  - iftop
+  - atop
+  - conntrack
+  - python-pip
+  - python3-pip
+
+java_apt_repos:
+  - 'ppa:webupd8team/java'
+apt_java_package: oracle-java8-installer
+
+logstash_version: "5.x"
+logstash_user: logstash
+logstash_max_open_files: 65536
+logstash_apt_repo: "deb https://artifacts.elastic.co/packages/{{ logstash_version }}/apt stable main"
+logstash_repo_key: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+logstash_conf_dir: "/etc/logstash/conf.d/"

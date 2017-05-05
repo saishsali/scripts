@@ -1,0 +1,28 @@
+---
+- name: Enable Logstash Repository
+  apt_repository:
+    repo: "{{ logstash_apt_repo }}"
+    state: present
+  tags: logstash_repo
+
+- name: Add Logstash Repo Key
+  apt_key:
+    url: "{{ logstash_repo_key }}"
+    state: present
+  tags: logstash_repo
+
+- name: Install apt-transport-https
+  apt:
+    pkg: apt-transport-https
+    state: present
+  tags: logstash_install
+
+- name: Install Logstash
+  apt:
+    pkg: logstash
+    update_cache: yes
+    state: latest
+  tags: logstash_install
+
+#at this point, we have base install which we shouldn't use...
+#we can make use of startup.options to create custom upstart servicess
