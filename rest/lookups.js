@@ -20,11 +20,11 @@ function lookupSOA(req, res) {
   //req.params.originalDomain contains the original domains.
   var domain = req.params.originalDomain;
   //Santize input request (only accept TLDs for SOA)
-  if (domain === '.' || !domain.endsWith('.')) {
+  if (domain === '.' || !domain.endsWith('.') || (domain.match(/\./g) || []).length > 1 ) {
     return res_json(res, {result: false});
   }
   //Only TLDs will be searched.
-  var tld = domain.substring(0, domain.length - 1);
+  var tld = domain.substring(0, domain.length - 1).toLowerCase();
   //QueryJSON for ES
   var queryJSON = {
     index: config.INDEX,
