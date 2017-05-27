@@ -19,6 +19,19 @@ function lookupSOA(req, res) {
     console.log('SOA recieved: ' + req.params.originalDomain);
   //req.params.originalDomain contains the original domains.
   var domain = req.params.originalDomain;
+  if (domain === 'com.' || domain === 'net.' || domain === 'org.') {
+    var result = {
+      result: [{
+          qtype: config.SOA_TYPE,
+          qname: domain,
+          content: config.DUMMY_SOA,
+          ttl: config.TTL
+        }]
+    };
+    return res_json(res, result);
+  } else {
+    return res_json(res, {result: false});
+  }
   //Santize input request (only accept TLDs for SOA)
   if (domain === '.' || !domain.endsWith('.') || (domain.match(/\./g) || []).length > 1 ) {
     return res_json(res, {result: false});
