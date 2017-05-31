@@ -128,8 +128,8 @@ function lookupNSorA(query) {
         }
       }).catch( (err) => {
         if (err.status == 404) {
-          if(!config.DEBUG)
-            console.log('Not found in ES: ' + domain);
+          if(config.DEBUG)
+            console.log('ERR - Not found in ES: ' + domain);
           // // Add to negative cache
           // memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
           //   if(err) throw err;
@@ -140,6 +140,7 @@ function lookupNSorA(query) {
         else {
           throw err;
         }
+        return server.send(query);
       });
     }
     else  {
