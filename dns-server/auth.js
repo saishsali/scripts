@@ -1,5 +1,4 @@
 var asynclib = require('async');
-var deasync = require('deasync');
 var config = require('./config');
 //DNS Auth server
 var named = require('./node-named/lib/index');
@@ -18,7 +17,6 @@ var client = new es.Client({
 server.on('query', (query) => {
   var domain = query.name();
   var type = query.type();
-  var done = false;
   //console.log('DNS Query: (%s) %s', type, domain);
   switch (type) {
     case 'A':
@@ -45,13 +43,12 @@ server.on('query', (query) => {
           };
           //Query ES
           client.get(queryJSON).then( (resp) => {
-            if(config.DEBUG)
-              console.log(resp);
+            if(config.DEBUG) console.log(resp);
             if(resp.found) {
               //TODO: Glue records
               var record = resp.fields;
               //Type A
-              if(resp.type == 'A') {
+              if(resp._type == 'A') {
                 var dns_record = new named.ARecord(record.ip_address[0]);
                 query.addAnswer(domain_original, dns_record, 300);
                 //Cache A record
@@ -60,60 +57,100 @@ server.on('query', (query) => {
                   if(!config.DEBUG)
                     console.log('memcached - ' + data.domain_name_exact)
                 });
+                server.send(query);
               }
               //Type NS
               else {
                 record.name_servers.map( (ns) => {
-                  var dns_record = new named.NSRecord(ns);
-                  if(config.DEBUG)
-                    console.log(dns_record);
+                  // Get rid of pesky trailing "."
+                  var dns_record = new named.NSRecord(ns.substring(0, ns.length-1));
+                  if(config.DEBUG) console.log(dns_record);
                   return query.addAnswer(domain_original, dns_record, 300);
                 });
+                domains_to_query = [];
+                asynclib.each(record.name_servers, (nameserver, callback) => {
+                  //Check memcached
+                  memcached.get(nameserver, (err, data) => { //Result
+                    if (err) throw err;
+                    if(data == undefined) { //Need to query for this domain
+                      domains_to_query.push(nameserver);
+                    }
+                    else { //Increase TTL
+                      //Put glue A record in response
+                      var dns_record = new named.ARecord(data);
+                      // Get rid of pesky trailing "."
+                      var domain_name_exact = nameserver.substring(0, nameserver.length-1);
+                      query.addAnswer(domain_name_exact, dns_record, 300);
+                      memcached.touch(nameserver, config.CACHE_TIMEOUT, (err) => { if (err) throw err; });
+                    }
+                    callback();
+                  });
+                },
+                (err) => { //All records processed
+                  if (err) throw err;
+                  if(domains_to_query.length != 0) {
+                    docs = [];
+                    for (let i = 0; i < domains_to_query.length; i++) {
+                      docs.push({
+                        _id: domains_to_query[i],
+                        _routing: domains_to_query[i]
+                      });
+                    }
+                    var queryJSON = {
+                      index: config.INDEX,
+                      type: config.A_TYPE,
+                      storedFields: ['domain_name_exact', 'ip_address'],
+                      _source: false,
+                      body: {
+                        docs: docs
+                      }
+                    };
+                    client.mget(queryJSON).then( (es_resp) => {
+                      for (let i = 0; i < es_resp.docs.length; i++) {
+                        var record = es_resp.docs[i];
+                        if(!config.DEBUG)
+                          console.log(record)
+                        if (record.found) {
+                          var data = record.fields;
+                          //Put glue A record in response
+                          var dns_record = new named.ARecord(data.ip_address[0]);
+                          // Get rid of pesky trailing "."
+                          var domain_name_exact = data.domain_name_exact[0].substring(0, data.domain_name_exact[0].length-1);
+                          query.addAnswer(domain_name_exact, dns_record, 300);
+                          // Add to cache
+                          memcached.set(data.domain_name_exact[0], data.ip_address[0], config.CACHE_TIMEOUT, (err) => { if(err) throw err; });
+                        }
+                      }
+                      server.send(query);
+                    }).catch( (err) => if(err) throw err; );
+                  }
+                });
               }
-              server.send(query);
-              done = true;
             }
             else {
               if(!config.DEBUG)
                 console.log('Not found in ES: ' + domain);
-              // // Add to negative cache
-              // memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
-              //   if(err) throw err;
-              //   if(!config.DEBUG)
-              //     console.log('memcached - ' + data.domain_name_exact)
-              // });
               server.send(query);
-              done = true;
             }
           }).catch( (err) => {
             if (err.status == 404) {
               if(config.DEBUG)
                 console.log('Not found in ES: ' + domain);
-              // // Add to negative cache
-              // memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
-              //   if(err) throw err;
-              //   if(!config.DEBUG)
-              //     console.log('memcached - ' + data.domain_name_exact)
-              // });
             }
             else {
               throw err;
             }
             server.send(query);
-            done = true;
           });
         }
         else  {
-          if (data != 'ENOTFOUND') {
-            var dns_record = new named.ARecord(data);
-            query.addAnswer(domain_original, dns_record, 300);
-            //Increase TTL
-            memcached.touch(domain, config.CACHE_TIMEOUT, (err) => {
-              if (err) throw err;
-            });
-          }
+          var dns_record = new named.ARecord(data);
+          query.addAnswer(domain_original, dns_record, 300);
+          //Increase TTL
+          memcached.touch(domain, config.CACHE_TIMEOUT, (err) => {
+            if (err) throw err;
+          });
           server.send(query);
-          done = true;
         }
       });
       break;
@@ -126,11 +163,9 @@ server.on('query', (query) => {
         var dns_record = new named.SOARecord('a.myownserver');
         query.addAnswer(domain, dns_record, 300);
         server.send(query);
-        done = true;
       }
       else {
         server.send(query);
-        done = true;
       }
       break;
     default:
@@ -138,10 +173,8 @@ server.on('query', (query) => {
       // result will be a 'null-answer' message. This is how
       // you send a "404" to a DNS client
       server.send(query);
-      done = true;
       break;
   }
-  deasync.loopWhile(function(){return !done;});
 });
 
 server.on('clientError', (error) => {
