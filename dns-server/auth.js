@@ -1,7 +1,7 @@
 var asynclib = require('async');
 var config = require('./config');
 //DNS Auth server
-var named = require('./lib/index');
+var named = require('./node-named/lib/index');
 var server = named.createServer();
 //Memcached
 var Memcached = require('memcached');
@@ -17,7 +17,7 @@ var client = new es.Client({
 server.on('query', (query) => {
   var domain = query.name();
   var type = query.type();
-  console.log('DNS Query: (%s) %s', type, domain);
+  //console.log('DNS Query: (%s) %s', type, domain);
   switch (type) {
     case 'A':
     case 'NS':
@@ -67,7 +67,7 @@ function lookupSOA(query) {
 
 function lookupNSorA(query) {
   var domain_original = query.name();
-  if(!config.DEBUG)
+  if(config.DEBUG)
     console.log(query.type() + ' recieved: ' + domain_original);
   //Domain
   var domain = domain_original.toUpperCase();
@@ -86,7 +86,7 @@ function lookupNSorA(query) {
       };
       //Query ES
       client.get(queryJSON).then( (resp) => {
-        if(!config.DEBUG)
+        if(config.DEBUG)
           console.log(resp);
         if(resp.found) {
           //TODO: Glue records
