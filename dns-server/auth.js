@@ -41,6 +41,12 @@ server.on('clientError', (error) => {
 
 server.on('uncaughtException', (error) => {
   console.log("there was an excepton: %s", error.message());
+});
+
+
+server.listen(1053, '::ffff:192.168.0.239', function() {
+  console.log('DNS server started on port 9999');
+});
 
 //Look up SOA Record
 function lookupSOA(query) {
@@ -53,47 +59,10 @@ function lookupSOA(query) {
     var dns_record = new named.SOARecord('a.myownserver');
     query.addAnswer(domain, dns_record, 300);
     return server.send(query);
-  } else {
+  }
+  else {
     return server.send(query);
   }
-  //Santize input request (only accept TLDs for SOA)
-  if (domain === '.' || !domain.endsWith('.') || (domain.match(/\./g) || []).length > 1 ) {
-    return res_json(res, {result: false});
-  }
-  //Only TLDs will be searched.
-  var tld = domain.substring(0, domain.length - 1).toLowerCase();
-  //QueryJSON for ES
-  var queryJSON = {
-    index: config.INDEX,
-    q: config.ZONE_QUERY + tld,
-    method: 'GET',
-    size: 0,
-    terminateAfter: 1
-  };
-  //Contact ES using promise.
-  client.search(queryJSON).then( (resp) => { //Success
-    if (resp.hits.total === 0) { //No hits found
-      //Respond False
-      return res_json(res, {result: false});
-    }
-    else { //Results found
-      var result = {
-        result: [{
-            qtype: config.SOA_TYPE,
-            qname: domain,
-            content: config.DUMMY_SOA,
-            ttl: config.TTL
-          }]
-      };
-      if(!config.DEBUG)
-        console.log('Responding with fake SOA');
-      return res_json(res, result);
-    }
-  }).catch( (err) => { //Failure
-    console.trace(err.message);
-    //Respond False
-    return res_json(res, {result: false});
-  });
 }
 
 function lookupNSorA(query) {
@@ -157,11 +126,13 @@ function lookupNSorA(query) {
             if(!config.DEBUG)
               console.log('memcached - ' + data.domain_name_exact)
           });
-        } else {
+        }
+        else {
           throw err;
         }
       });
-    } else  {
+    }
+    else  {
       if (data != 'ENOTFOUND') {
         var dns_record = new named.ARecord(data);
         query.addAnswer(domain_original, dns_record, 300);
