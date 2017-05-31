@@ -21,10 +21,109 @@ server.on('query', (query) => {
   switch (type) {
     case 'A':
     case 'NS':
-      lookupNSorA(query);
+      var domain_original = query.name();
+      if(config.DEBUG)
+        console.log(query.type() + ' recieved: ' + domain_original);
+      //Domain
+      var domain = domain_original.toUpperCase() + '.';
+      //Check memcached first
+      memcached.get(domain, (err, data) => {
+        if (err) throw err;
+        if(config.DEBUG)
+          console.log(domain + ' memcached resp1: ' + data);
+        if(data == undefined) { //Need to query ES for this domain
+          //QueryJSON for ES
+          var queryJSON = {
+            index: config.INDEX,
+            type: '_all',
+            storedFields: ['name_servers', 'ip_address'],
+            _source: false,
+            id: domain,
+            routing: domain
+          };
+          //Query ES
+          client.get(queryJSON).then( (resp) => {
+            if(config.DEBUG)
+              console.log(resp);
+            if(resp.found) {
+              //TODO: Glue records
+              var record = resp.fields;
+              //Type A
+              if(resp.type == 'A') {
+                var dns_record = new named.ARecord(record.ip_address[0]);
+                query.addAnswer(domain_original, dns_record, 300);
+                //Cache A record
+                memcached.set(record._id, record.ip_address[0], config.CACHE_TIMEOUT, (err) => {
+                  if(err) throw err;
+                  if(!config.DEBUG)
+                    console.log('memcached - ' + data.domain_name_exact)
+                });
+              }
+              //Type NS
+              else {
+                record.name_servers.map( (ns) => {
+                  var dns_record = new named.NSRecord(ns);
+                  if(config.DEBUG)
+                    console.log(dns_record);
+                  return query.addAnswer(domain_original, dns_record, 300);
+                });
+              }
+              server.send(query);
+            }
+            else {
+              if(!config.DEBUG)
+                console.log('Not found in ES: ' + domain);
+              // // Add to negative cache
+              // memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
+              //   if(err) throw err;
+              //   if(!config.DEBUG)
+              //     console.log('memcached - ' + data.domain_name_exact)
+              // });
+              server.send(query);
+            }
+          }).catch( (err) => {
+            if (err.status == 404) {
+              if(config.DEBUG)
+                console.log('Not found in ES: ' + domain);
+              // // Add to negative cache
+              // memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
+              //   if(err) throw err;
+              //   if(!config.DEBUG)
+              //     console.log('memcached - ' + data.domain_name_exact)
+              // });
+            }
+            else {
+              throw err;
+            }
+            server.send(query);
+          });
+        }
+        else  {
+          if (data != 'ENOTFOUND') {
+            var dns_record = new named.ARecord(data);
+            query.addAnswer(domain_original, dns_record, 300);
+            //Increase TTL
+            memcached.touch(domain, config.CACHE_TIMEOUT, (err) => {
+              if (err) throw err;
+            });
+          }
+          server.send(query);
+        }
+      });
       break;
     case 'SOA':
-      lookupSOA(query);
+      if(!config.DEBUG)
+        console.log('SOA recieved: ' + domain);
+      //req.params.originalDomain contains the original domains.
+      //REVIEW: Temporary for com net and org
+      if (domain === 'com' || domain === 'net' || domain === 'org') {
+        var dns_record = new named.SOARecord('a.myownserver');
+        query.addAnswer(domain, dns_record, 300);
+        server.send(query);
+      }
+      else {
+        server.send(query);
+      }
       break;
     default:
       // If we do not add any answers to the query then the
@@ -47,112 +146,3 @@ server.on('uncaughtException', (error) => {
 server.listen(1053, '::ffff:192.168.0.239', function() {
   console.log('DNS server started on port 9999');
 });
-
-//Look up SOA Record
-function lookupSOA(query) {
-  var domain = query.name();
-  if(!config.DEBUG)
-    console.log('SOA recieved: ' + domain);
-  //req.params.originalDomain contains the original domains.
-  //REVIEW: Temporary for com net and org
-  if (domain === 'com' || domain === 'net' || domain === 'org') {
-    var dns_record = new named.SOARecord('a.myownserver');
-    query.addAnswer(domain, dns_record, 300);
-    return server.send(query);
-  }
-  else {
-    return server.send(query);
-  }
-}
-
-function lookupNSorA(query) {
-  var domain_original = query.name();
-  if(config.DEBUG)
-    console.log(query.type() + ' recieved: ' + domain_original);
-  //Domain
-  var domain = domain_original.toUpperCase() + '.';
-  //Check memcached first
-  memcached.get(domain, (err, data) => {
-    if (err) throw err;
-    if(config.DEBUG)
-      console.log(domain + ' memcached resp1: ' + data);
-    if(data == undefined) { //Need to query ES for this domain
-      //QueryJSON for ES
-      var queryJSON = {
-        index: config.INDEX,
-        type: '_all',
-        storedFields: ['name_servers', 'ip_address'],
-        _source: false,
-        id: domain,
-        routing: domain
-      };
-      //Query ES
-      client.get(queryJSON).then( (resp) => {
-        if(config.DEBUG)
-          console.log(resp);
-        if(resp.found) {
-          //TODO: Glue records
-          var record = resp.fields;
-          //Type A
-          if(resp.type == 'A') {
-            var dns_record = new named.ARecord(record.ip_address[0]);
-            query.addAnswer(domain_original, dns_record, 300);
-            //Cache A record
-            memcached.set(record._id, record.ip_address[0], config.CACHE_TIMEOUT, (err) => {
-              if(err) throw err;
-              if(!config.DEBUG)
-                console.log('memcached - ' + data.domain_name_exact)
-            });
-          }
-          //Type NS
-          else {
-            record.name_servers.map( (ns) => {
-              var dns_record = new named.NSRecord(ns);
-              if(config.DEBUG)
-                console.log(dns_record);
-              return query.addAnswer(domain_original, dns_record, 300);
-            });
-          }
-          return server.send(query);
-        }
-        else {
-          if(!config.DEBUG)
-            console.log('Not found in ES: ' + domain);
-          // // Add to negative cache
-          // memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
-          //   if(err) throw err;
-          //   if(!config.DEBUG)
-          //     console.log('memcached - ' + data.domain_name_exact)
-          // });
-          return server.send(query);
-        }
-      }).catch( (err) => {
-        if (err.status == 404) {
-          if(config.DEBUG)
-            console.log('ERR - Not found in ES: ' + domain);
-          // // Add to negative cache
-          // memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
-          //   if(err) throw err;
-          //   if(!config.DEBUG)
-          //     console.log('memcached - ' + data.domain_name_exact)
-          // });
-        }
-        else {
-          throw err;
-        }
-        return server.send(query);
-      });
-    }
-    else  {
-      if (data != 'ENOTFOUND') {
-        var dns_record = new named.ARecord(data);
-        query.addAnswer(domain_original, dns_record, 300);
-        //Increase TTL
-        memcached.touch(domain, config.CACHE_TIMEOUT, (err) => {
-          if (err) throw err;
-        });
-      }
-      return server.send(query);
-    }
-  });
-}
