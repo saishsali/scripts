@@ -1,4 +1,5 @@
 var asynclib = require('async');
+var deasync = require('deasync');
 var config = require('./config');
 //DNS Auth server
 var named = require('./node-named/lib/index');
@@ -17,6 +18,7 @@ var client = new es.Client({
 server.on('query', (query) => {
   var domain = query.name();
   var type = query.type();
+  var done = false;
   //console.log('DNS Query: (%s) %s', type, domain);
   switch (type) {
     case 'A':
@@ -69,6 +71,7 @@ server.on('query', (query) => {
                 });
               }
               server.send(query);
+              done = true;
             }
             else {
               if(!config.DEBUG)
@@ -80,6 +83,7 @@ server.on('query', (query) => {
               //     console.log('memcached - ' + data.domain_name_exact)
               // });
               server.send(query);
+              done = true;
             }
           }).catch( (err) => {
             if (err.status == 404) {
@@ -96,6 +100,7 @@ server.on('query', (query) => {
               throw err;
             }
             server.send(query);
+            done = true;
           });
         }
         else  {
@@ -108,6 +113,7 @@ server.on('query', (query) => {
             });
           }
           server.send(query);
+          done = true;
         }
       });
       break;
@@ -120,9 +126,11 @@ server.on('query', (query) => {
         var dns_record = new named.SOARecord('a.myownserver');
         query.addAnswer(domain, dns_record, 300);
         server.send(query);
+        done = true;
       }
       else {
         server.send(query);
+        done = true;
       }
       break;
     default:
@@ -130,8 +138,10 @@ server.on('query', (query) => {
       // result will be a 'null-answer' message. This is how
       // you send a "404" to a DNS client
       server.send(query);
+      done = true;
       break;
   }
+  deasync.loopWhile(function(){return !done;});
 });
 
 server.on('clientError', (error) => {
