@@ -122,7 +122,7 @@ server.on('query', (query) => {
                         }
                       }
                       server.send(query);
-                    }).catch( (err) => if(err) throw err; );
+                    }).catch( (err) => { if(err) throw err; } );
                   }
                 });
               }
