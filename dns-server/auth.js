@@ -74,6 +74,8 @@ function lookupNSorA(query) {
   //Check memcached first
   memcached.get(domain, (err, data) => {
     if (err) throw err;
+    if(config.DEBUG)
+      console.log(domain + ' memcached resp1: ' + data);
     if(data == undefined) { //Need to query ES for this domain
       //QueryJSON for ES
       var queryJSON = {
