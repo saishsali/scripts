@@ -95,11 +95,19 @@ function lookupNSorA(query) {
           if(resp.type == 'A') {
             var dns_record = new named.ARecord(record.ip_address[0]);
             query.addAnswer(domain_original, dns_record, 300);
+            //Cache A record
+            memcached.set(record._id, record.ip_address[0], config.CACHE_TIMEOUT, (err) => {
+              if(err) throw err;
+              if(!config.DEBUG)
+                console.log('memcached - ' + data.domain_name_exact)
+            });
           }
           //Type NS
           else {
             record.name_servers.map( (ns) => {
               var dns_record = new named.NSRecord(ns);
+              if(config.DEBUG)
+                console.log(dns_record);
               return query.addAnswer(domain_original, dns_record, 300);
             });
           }
@@ -108,24 +116,24 @@ function lookupNSorA(query) {
         else {
           if(!config.DEBUG)
             console.log('Not found in ES: ' + domain);
-          // Add to negative cache
-          memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
-            if(err) throw err;
-            if(!config.DEBUG)
-              console.log('memcached - ' + data.domain_name_exact)
-          });
+          // // Add to negative cache
+          // memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
+          //   if(err) throw err;
+          //   if(!config.DEBUG)
+          //     console.log('memcached - ' + data.domain_name_exact)
+          // });
           return server.send(query);
         }
       }).catch( (err) => {
         if (err.status == 404) {
           if(!config.DEBUG)
             console.log('Not found in ES: ' + domain);
-          // Add to negative cache
-          memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
-            if(err) throw err;
-            if(!config.DEBUG)
-              console.log('memcached - ' + data.domain_name_exact)
-          });
+          // // Add to negative cache
+          // memcached.set(domain, 'ENOTFOUND', config.CACHE_TIMEOUT, (err) => {
+          //   if(err) throw err;
+          //   if(!config.DEBUG)
+          //     console.log('memcached - ' + data.domain_name_exact)
+          // });
         }
         else {
           throw err;
@@ -136,11 +144,11 @@ function lookupNSorA(query) {
       if (data != 'ENOTFOUND') {
         var dns_record = new named.ARecord(data);
         query.addAnswer(domain_original, dns_record, 300);
+        //Increase TTL
+        memcached.touch(domain, config.CACHE_TIMEOUT, (err) => {
+          if (err) throw err;
+        });
       }
-      //Increase TTL
-      memcached.touch(domain, config.CACHE_TIMEOUT, (err) => {
-        if (err) throw err;
-      });
       return server.send(query);
     }
   });
