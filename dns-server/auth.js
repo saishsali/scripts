@@ -70,7 +70,7 @@ function lookupNSorA(query) {
   if(config.DEBUG)
     console.log(query.type() + ' recieved: ' + domain_original);
   //Domain
-  var domain = domain_original.toUpperCase();
+  var domain = domain_original.toUpperCase() + '.';
   //Check memcached first
   memcached.get(domain, (err, data) => {
     if (err) throw err;
