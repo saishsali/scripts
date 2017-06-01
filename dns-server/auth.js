@@ -130,7 +130,7 @@ function AQuery(query) {
           return server.send(original_query);
         }
       }).catch( (err) => {
-        if (config.DEBUG && err.status == 404)  console.log('Not found in ES: ' + domain);
+        if (!config.DEBUG && err.status == 404)  console.log('Not found in ES: ' + domain);
         else  console.trace(err.message);
         return server.send(original_query);
       });
@@ -162,7 +162,7 @@ function NSQuery(query) {
   };
   //Query ES
   client.get(queryJSON).then( (resp) => {
-    if(config.DEBUG) console.log(resp);
+    if(!config.DEBUG) console.log(resp);
     if(resp.found) {
       var record = resp.fields;
       switch(resp._type) {
@@ -247,7 +247,7 @@ function NSQuery(query) {
       return server.send(original_query);
     }
   }).catch( (err) => {
-    if (config.DEBUG && err.status == 404)  console.log('Not found in ES: ' + domain);
+    if (!config.DEBUG && err.status == 404)  console.log('Not found in ES: ' + domain);
     else  console.trace(err.message);
     return server.send(original_query);
   });
@@ -294,7 +294,7 @@ function SOAQuery(query) {
 server.on('query', (query) => {
   var domain = query.name();
   var type = query.type();
-  if(config.DEBUG)
+  if(!config.DEBUG)
     console.log(query.type() + ' Query: ' + domain);
   switch (type) {
     case 'A':
