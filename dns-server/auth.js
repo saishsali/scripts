@@ -131,8 +131,8 @@ function AQuery(query) {
         }
       }).catch( (err) => {
         if (!config.DEBUG && err.status == 404)  console.log('Not found in ES: ' + domain);
-        else  console.trace(err.message);
-        return server.send(original_query);
+        else if (err.status != 404)  console.trace(err.message);
+        return server.send(query);
       });
     }
     else  {
@@ -294,8 +294,7 @@ function SOAQuery(query) {
 server.on('query', (query) => {
   var domain = query.name();
   var type = query.type();
-  if(!config.DEBUG)
-    console.log(query.type() + ' Query: ' + domain);
+  if(!config.DEBUG) console.log(query.type() + ' Query: ' + domain);
   switch (type) {
     case 'A':
       AQuery(query);
