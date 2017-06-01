@@ -29,7 +29,7 @@ server.on('query', (query) => {
       //Check memcached first
       memcached.get(domain, (err, data) => {
         if (err) throw err;
-        if(config.DEBUG)
+        if(!config.DEBUG)
           console.log(domain + ' memcached resp1: ' + data);
         if(data == undefined) { //Need to query ES for this domain
           //QueryJSON for ES
@@ -43,14 +43,14 @@ server.on('query', (query) => {
           };
           //Query ES
           client.get(queryJSON).then( (resp) => {
-            if(config.DEBUG) console.log(resp);
+            if(!config.DEBUG) console.log(resp);
             if(resp.found) {
               //TODO: Glue records
               var record = resp.fields;
               //Type A
               if(resp._type == 'A') {
                 var dns_record = new named.ARecord(record.ip_address[0]);
-                query.addAnswer(domain_original, dns_record, 300);
+                query.addAnswer(domain_original, dns_record, 300, 'an');
                 //Cache A record
                 memcached.set(record._id, record.ip_address[0], config.CACHE_TIMEOUT, (err) => {
                   if(err) throw err;
@@ -64,8 +64,8 @@ server.on('query', (query) => {
                 record.name_servers.map( (ns) => {
                   // Get rid of pesky trailing "."
                   var dns_record = new named.NSRecord(ns.substring(0, ns.length-1));
-                  if(config.DEBUG) console.log(dns_record);
-                  return query.addAnswer(domain_original, dns_record, 300);
+                  if(!config.DEBUG) console.log(dns_record);
+                  return query.addAnswer(domain_original, dns_record, 300, 'ns');
                 });
                 domains_to_query = [];
                 asynclib.each(record.name_servers, (nameserver, callback) => {
@@ -80,7 +80,7 @@ server.on('query', (query) => {
                       var dns_record = new named.ARecord(data);
                       // Get rid of pesky trailing "."
                       var domain_name_exact = nameserver.substring(0, nameserver.length-1);
-                      query.addAnswer(domain_name_exact, dns_record, 300);
+                      query.addAnswer(domain_name_exact, dns_record, 300, 'ar');
                       memcached.touch(nameserver, config.CACHE_TIMEOUT, (err) => { if (err) throw err; });
                     }
                     callback();
@@ -116,11 +116,13 @@ server.on('query', (query) => {
                           var dns_record = new named.ARecord(data.ip_address[0]);
                           // Get rid of pesky trailing "."
                           var domain_name_exact = data.domain_name_exact[0].substring(0, data.domain_name_exact[0].length-1);
-                          query.addAnswer(domain_name_exact, dns_record, 300);
+                          query.addAnswer(domain_name_exact, dns_record, 300, 'ar');
                           // Add to cache
                           memcached.set(data.domain_name_exact[0], data.ip_address[0], config.CACHE_TIMEOUT, (err) => { if(err) throw err; });
                         }
                       }
+                      if (!config.DEBUG)
+                        console.log(query);
                       server.send(query);
                     }).catch( (err) => { if(err) throw err; } );
                   }
@@ -145,7 +147,7 @@ server.on('query', (query) => {
         }
         else  {
           var dns_record = new named.ARecord(data);
-          query.addAnswer(domain_original, dns_record, 300);
+          query.addAnswer(domain_original, dns_record, 300, 'an');
           //Increase TTL
           memcached.touch(domain, config.CACHE_TIMEOUT, (err) => {
             if (err) throw err;
@@ -161,7 +163,7 @@ server.on('query', (query) => {
       //REVIEW: Temporary for com net and org
       if (domain === 'com' || domain === 'net' || domain === 'org') {
         var dns_record = new named.SOARecord('a.myownserver');
-        query.addAnswer(domain, dns_record, 300);
+        query.addAnswer(domain, dns_record, 300, 'an');
         server.send(query);
       }
       else {
