@@ -14,7 +14,6 @@ var client = new es.Client({
   maxSockets: config.MAX_SOCKETS
 });
 
-
 function AQuery(query) {
   var domain_original = query.name();
   var domain = domain_original.toUpperCase() + '.';
@@ -36,7 +35,7 @@ function AQuery(query) {
       };
       //Query ES
       client.get(queryJSON).then( (resp) => {
-        if(config.DEBUG) console.log(resp);
+        if(!config.DEBUG) console.log(resp);
         if(resp.found) {
           var record = resp.fields;
           switch(resp._type) {
@@ -44,10 +43,9 @@ function AQuery(query) {
               var dns_record = new named.ARecord(record.ip_address[0]);
               query.addAnswer(domain_original, dns_record, 300, 'an');
               //Cache A record
-              memcached.set(record._id, record.ip_address[0], config.CACHE_TIMEOUT, (err) => {
+              memcached.set(resp._id, record.ip_address[0], config.CACHE_TIMEOUT, (err) => {
                 if(err) throw err;
-                if(!config.DEBUG)
-                  console.log('memcached - ' + data.domain_name_exact)
+                if(!config.DEBUG) console.log('memcached - ' + data.domain_name_exact)
               });
               return server.send(query);
               break;
@@ -325,6 +323,6 @@ server.on('uncaughtException', (error) => {
   console.log("there was an excepton: %s", error.message());
 });
 
-server.listen(1053, '::ffff:192.168.0.239', function() {
-  console.log('DNS server started on port 9999');
+server.listen(config.PORT, '::ffff:192.168.0.239', function() {
+  console.log('DNS server started on port ' + config.PORT);
 });

@@ -24,6 +24,9 @@ exports.TTL = 60;
 exports.DEBUG = true;
 exports.LOG_TIME = true;
 
+//Auth-server settings
+exports.PORT = 1053;
+
 //ES settings
 exports.MAX_SOCKETS = 20;
 exports.ES_HOSTS = [
