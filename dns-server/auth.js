@@ -297,7 +297,7 @@ server.on('query', (query) => {
   var domain = query.name();
   var type = query.type();
   if(config.DEBUG)
-    console.log(query.type() + ' Query: ' + domain_original);
+    console.log(query.type() + ' Query: ' + domain);
   switch (type) {
     case 'A':
       AQuery(query);
