@@ -62,6 +62,8 @@ node.data: {{ elasticsearch_node_data }}
 # node.ingest: true
 {% if elasticsearch_node_ingest is defined %}
 node.ingest: {{ elasticsearch_node_ingest }}
+{% else %}
+node.ingest: false
 {% endif %}
 
 # ----------------------------------- Paths ------------------------------------
@@ -90,9 +92,6 @@ bootstrap.memory_lock: true
 script.max_compilations_per_minute: {{ elasticsearch_max_compilations }}
 {% endif %}
 
-{% if elasticsearch_bulk_queue is defined %}
-thread_pool.bulk.queue_size: {{ elasticsearch_bulk_queue }}
-{% endif %}
 #
 # Make sure that the heap size is set to about half the memory available
 # on the system and that the owner of the process is allowed to use this
@@ -147,6 +146,13 @@ discovery.zen.minimum_master_nodes: 1
 #
 # Disable starting multiple nodes on a single system:
 #
+{% if elasticsearch_bulk_queue is defined %}
+thread_pool.bulk.queue_size: {{ elasticsearch_bulk_queue }}
+{% endif %}
+
+{% if elasticsearch_index_queue is defined %}
+thread_pool.index.queue_size: {{ elasticsearch_index_queue }}
+{% endif %}
 #node.max_local_storage_nodes: 1
 #
 # Require explicit names when deleting indices:

@@ -4,8 +4,13 @@ elasticsearch_min_index_buffer_size: 512mb
 elasticsearch_use_host_name_as_node_name: true
 elasticsearch_node_ingest: false
 elasticsearch_max_compilations: 30000
-elasticsearch_bulk_queue: 500
+elasticsearch_bulk_queue: -1
+elasticsearch_index_queue: -1
 elasticsearch_heap_size: 3g
 elasticsearch_network_host: 0.0.0.0
 elasticsearch_discovery_zen_ping_unicast_hosts: "[\"{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}\"]"
 xpack_enabled: true
+xpack_security: "xpack.security.enabled:"
+xpack_monitoring: "xpack.monitoring.enabled:"
+xpack_graph: "xpack.graph.enabled:"
+xpack_watcher: "xpack.watcher.enabled:"
