@@ -1,0 +1,25 @@
+---
+- name: Install public signing key pdns-recursor
+  apt_repository:
+    repo: "{{ pdns_rec_apt_repo }}"
+    state: present
+
+- name: Add pdns repo key
+  apt_key:
+    url: "{{ pdns_repo_key }}"
+    state: present
+
+- name: Set up pdns preferences.d file
+  template: src=templates/pdns.j2
+            dest="{{ pdns_preferences }}"
+            owner=root
+            group=root
+            mode=0775
+
+- name: Install pdns-recursor
+  apt:
+    pkg: pdns-recursor
+    update_cache: yes
+    state: present
+
+- include: configure-recursor.yml

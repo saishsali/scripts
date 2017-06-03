@@ -1,4 +1,4 @@
 ---
 repo_location: /home/ubuntu/scripts
-server_location: "{{ repo_location }}/rest"
+server_location: "{{ repo_location }}/{{ app_name }}"
 nodejs_version: 7.x

@@ -1,0 +1,7 @@
+---
+- hosts: node_servers
+  vars:
+    app_name: rest
+  become: yes
+  roles:
+    - nodejs

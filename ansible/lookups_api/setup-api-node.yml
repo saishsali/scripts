@@ -1,5 +1,0 @@
----
-- hosts: lookup-api-nodes
-  become: yes
-  roles:
-    - setup_node

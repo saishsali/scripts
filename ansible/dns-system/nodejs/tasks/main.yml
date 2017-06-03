@@ -1,5 +1,4 @@
 ---
-
 - name: Install git
   apt:
     name: git
@@ -52,7 +51,7 @@
     path: "{{ server_location }}"
 
 - name: Start API
-  shell: pm2 start server.js -i 0 --watch --name lookup-api
+  shell: pm2 start server.js -i 0 --watch --name "{{ app_name }}"
   become_user: ubuntu
   args:
     chdir: "{{ server_location }}"
