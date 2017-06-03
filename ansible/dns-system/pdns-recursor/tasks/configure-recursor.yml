@@ -7,7 +7,14 @@
 
   - name: Copy pdns-recursor configuration (recursor.conf)
     template: src=recursor.conf.j2
-              dest="{{ pdns_config_dir }}"/recursor.conf
+              dest={{ pdns_config_dir }}/recursor.conf
+              owner=root
+              group=root
+              mode=0644
+
+  - name: Copy forward_zones_file
+    template: src=forward_zones.txt.j2
+              dest={{ forward_zones_file }}
               owner=root
               group=root
               mode=0644

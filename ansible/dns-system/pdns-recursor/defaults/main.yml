@@ -14,7 +14,7 @@ client_tcp_timeout: 10
 daemon: "yes"
 network_timeout: 4000
 max_total_msec: 0
-forward_zones_file: "/etc/powerdns/forward_zones.txt"
+forward_zones_file: /etc/powerdns/forward_zones.txt
 max_cache_ttl: 50
 max_mthreads: 32768
 max_negative_ttl: 60
