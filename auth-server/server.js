@@ -322,6 +322,6 @@ server.on('uncaughtException', (error) => {
   console.log("there was an excepton: %s", error.message());
 });
 
-server.listen(config.PORT, '::ffff:192.168.0.239', function() {
+server.listen(config.PORT, config.IP, function() {
   console.log('DNS server started on port ' + config.PORT);
 });

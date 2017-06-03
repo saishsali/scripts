@@ -26,6 +26,8 @@ exports.LOG_TIME = true;
 
 //Auth-server settings
 exports.PORT = 1053;
+exports.IP = '::ffff:192.168.0.238';
+//exports.IP = '::ffff:192.168.0.239';
 
 //ES settings
 exports.MAX_SOCKETS = 20;
