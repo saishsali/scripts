@@ -47,23 +47,21 @@ node.name: {{ elasticsearch_node_name }}
 #
 # node.master: true
 {% if elasticsearch_node_master is defined %}
-node.master: {{ elasticsearch_node_master }}
+node.master: {{ elasticsearch_node_master | to_json }}
 {% endif %}
 #
 # Allow this node to store data (enabled by default):
 #
 # node.data: true
 {% if elasticsearch_node_data is defined %}
-node.data: {{ elasticsearch_node_data }}
+node.data: {{ elasticsearch_node_data | to_json }}
 {% endif %}
 #
 # Allow this node to ingest data (enabled by default):
 #
 # node.ingest: true
 {% if elasticsearch_node_ingest is defined %}
-node.ingest: {{ elasticsearch_node_ingest }}
-{% else %}
-node.ingest: false
+node.ingest: {{ elasticsearch_node_ingest | to_json }}
 {% endif %}
 
 # ----------------------------------- Paths ------------------------------------
@@ -163,11 +161,11 @@ script.engine.groovy.inline: false
 script.engine.groovy.stored: false
 script.engine.groovy.file: false
 
+{% if xpack_enabled %}
 action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*
 
-{% if xpack_enabled %}
-xpack.security.enabled: false
-xpack.monitoring.enabled: true
-xpack.graph.enabled: false
-xpack.watcher.enabled: false
+xpack.security.enabled: {{ xpack_security_enabled | to_json }}
+xpack.monitoring.enabled: {{ xpack_monitoring_enabled | to_json }}
+xpack.graph.enabled: {{ xpack_graph_enabled | to_json }}
+xpack.watcher.enabled: {{ xpack_watcher_enabled | to_json }}
 {% endif %}

@@ -9,8 +9,10 @@ elasticsearch_index_queue: -1
 elasticsearch_heap_size: 3g
 elasticsearch_network_host: 0.0.0.0
 elasticsearch_discovery_zen_ping_unicast_hosts: "[\"{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}\"]"
+
+
 xpack_enabled: true
-xpack_security: "xpack.security.enabled:"
-xpack_monitoring: "xpack.monitoring.enabled:"
-xpack_graph: "xpack.graph.enabled:"
-xpack_watcher: "xpack.watcher.enabled:"
+xpack_security_enabled: false
+xpack_monitoring_enabled: true
+xpack_graph_enabled: false
+xpack_watcher_enabled: false
