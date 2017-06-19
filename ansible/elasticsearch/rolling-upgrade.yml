@@ -1,0 +1,50 @@
+---
+- hosts: es_cluster
+  become: yes
+  serial: 1
+  pre_tasks:
+    - name: Set variable | es_master_ip
+      set_fact: es_master_ip="{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}"
+
+    - name: Disable routing allocation
+      uri:
+        url: http://{{ es_master_ip }}:9200/_cluster/settings?pretty
+        method: POST
+        body: "{{ lookup('file','files/disable_routing_allocation.json') }}"
+        body_format: json
+
+    - name: Disable routing allocation
+      uri:
+        url: http://{{ es_master_ip }}:9200/_flush/synced?pretty
+        method: POST
+      register: DRA
+      until: DRA|success
+      retries: 5
+      delay: 10
+
+  # roles:
+  #   - es_cluster_install
+
+  tasks:
+    - name: Check if host has rejoined
+      uri:
+        url: http://{{ es_master_ip }}:9200/_cat/nodes
+        body: "{{ lookup('file','disable_routing_allocation.json') }}"
+      register: rejoin
+      until: rejoin.stdout.find("{{ ansible_hostname }}") != -1 and
+             rejoin.stdout.find("{{ inventory_hostname }}") != -1
+      delay: 5
+
+    - name: Enable routing allocation
+      uri:
+        url: http://{{ es_master_ip }}:9200/_cluster/settings?pretty
+        method: POST
+        body: "{{ lookup('file','files/enable_routing_allocation.json') }}"
+        body_format: json
+
+    - name: Cluster status
+      uri:
+        url: http://{{ es_master_ip }}:9200/_cat/health
+      register: status
+      until: status.stdout.find("green") != -1
+      delay: 5
