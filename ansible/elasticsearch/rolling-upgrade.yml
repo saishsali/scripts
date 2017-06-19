@@ -4,47 +4,45 @@
   serial: 1
   pre_tasks:
     - name: Set variable | es_master_ip
-      set_fact: es_master_ip="{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}"
+      set_fact: es_master_ip="192.168.0.204" # "{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}"
 
     - name: Disable routing allocation
-      uri:
-        url: http://{{ es_master_ip }}:9200/_cluster/settings?pretty
-        method: POST
-        body: "{{ lookup('file','files/disable_routing_allocation.json') }}"
-        body_format: json
-
-    - name: Disable routing allocation
-      uri:
-        url: http://{{ es_master_ip }}:9200/_flush/synced?pretty
-        method: POST
+      command: bash rolling_upgrade_scripts/disable_routing_allocation.sh
       register: DRA
       until: DRA|success
+      delegate_to: 127.0.0.1
+      delay: 10
+
+    - name: Sync Flush
+      command: curl -XPOST 'http://{{ es_master_ip }}:9200/_flush/synced'
+      register: DRA
+      until: DRA|success
+      delegate_to: 127.0.0.1
       retries: 5
       delay: 10
 
-  # roles:
-  #   - es_cluster_install
+  roles:
+    - es_cluster_install
 
   tasks:
     - name: Check if host has rejoined
-      uri:
-        url: http://{{ es_master_ip }}:9200/_cat/nodes
-        body: "{{ lookup('file','disable_routing_allocation.json') }}"
-      register: rejoin
-      until: rejoin.stdout.find("{{ ansible_hostname }}") != -1 and
-             rejoin.stdout.find("{{ inventory_hostname }}") != -1
+      command: bash rolling_upgrade_scripts/node_rejoin.sh {{ ansible_hostname }} {{ inventory_hostname }} 
+      register: NRJ
+      until: NRJ|success
+      delegate_to: 127.0.0.1
       delay: 5
 
     - name: Enable routing allocation
-      uri:
-        url: http://{{ es_master_ip }}:9200/_cluster/settings?pretty
-        method: POST
-        body: "{{ lookup('file','files/enable_routing_allocation.json') }}"
-        body_format: json
+      command: bash rolling_upgrade_scripts/enable_routing_allocation.sh
+      register: ERA
+      until: ERA|success
+      delegate_to: 127.0.0.1
+      delay: 10
 
     - name: Cluster status
-      uri:
-        url: http://{{ es_master_ip }}:9200/_cat/health
-      register: status
-      until: status.stdout.find("green") != -1
-      delay: 5
+      command: bash rolling_upgrade_scripts/cluster_status.sh
+      register: CS
+      until: CS|success
+      delegate_to: 127.0.0.1
+      delay: 30
+      retries: 5
