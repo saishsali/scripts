@@ -1,36 +1,12 @@
 ---
 
-- name: xpack | Set {{ xpack_security }}
-  lineinfile:
-    dest={{ elasticsearch_conf_dir }}/elasticsearch.yml
-    regexp='^{{ xpack_security }}'
-    insertafter=EOF
-    line='{{ xpack_security}} false'
-    create=yes
-
-- name: xpack | Set {{ xpack_monitoring }}
-  lineinfile:
-    dest={{ elasticsearch_conf_dir }}/elasticsearch.yml
-    regexp='^{{ xpack_monitoring }}'
-    insertafter=EOF
-    line='{{ xpack_monitoring}} true'
-    create=yes
-
-- name: xpack | Set {{ xpack_graph }}
-  lineinfile:
-    dest={{ elasticsearch_conf_dir }}/elasticsearch.yml
-    regexp='^{{ xpack_graph }}'
-    insertafter=EOF
-    line='{{ xpack_graph}} false'
-    create=yes
-
-- name: xpack | Set {{ xpack_watcher }}
-  lineinfile:
-    dest={{ elasticsearch_conf_dir }}/elasticsearch.yml
-    regexp='^{{ xpack_watcher }}'
-    insertafter=EOF
-    line='{{ xpack_watcher}} false'
-    create=yes
+- name: xpack | Uninstall xpack
+  become: yes
+  command: bin/elasticsearch-plugin remove x-pack
+  args:
+    chdir: "{{ elasticsearch_home_dir }}"
+  notify: Restart Elasticsearch
+  ignore_errors: yes
 
 - name: xpack | Install xpack
   become: yes
@@ -38,4 +14,3 @@
   args:
     chdir: "{{ elasticsearch_home_dir }}"
   notify: Restart Elasticsearch
-  ignore_errors: yes

@@ -11,5 +11,6 @@
 - include: elasticsearch.yml
 # Install xpack
 - include: xpack.yml
+  when: xpack_enabled
 # Always run post-run tasks
 - include: post-run.yml

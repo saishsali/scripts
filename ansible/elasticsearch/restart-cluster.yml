@@ -1,7 +1,6 @@
 ---
 - hosts: es_cluster
   become: yes
-  serial: 5
   tasks:
     - name: Stop ES
       service:
@@ -11,6 +10,7 @@
     - name: Stop all processes started by ES
       command: pkill -u elasticsearch
       become: yes
+      ignore_errors: yes
 
     - name: Reboot Machine
       shell: reboot
