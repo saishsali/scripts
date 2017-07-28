@@ -20,6 +20,7 @@ function AQuery(query) {
   var original_query = JSON.parse(JSON.stringify(query));
   //Check cache if A record is present
   memcached.get(domain, (err, data) => {
+    //TODO: query es if memcached error
     if (err) { console.trace(err.message); return server.send(original_query); }
     if(!config.DEBUG)
       console.log(domain + ' memcached resp1: ' + data);
@@ -301,16 +302,16 @@ server.on('query', (query) => {
   if(!config.DEBUG) console.log(query.type() + ' Query: ' + domain);
   switch (type) {
     case 'A':
-      //var a_record = new named.ARecord('192.168.0.91');
-      //var ns_record = new named.NSRecord('A.NS.MYOWNSERVER.NET');
-      //query.addAnswer(domain, ns_record, 300, 'ns');
-      //query.addAnswer('A.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
-      //a_record = new named.ARecord('130.245.169.69');
-      //ns_record = new named.NSRecord('B.NS.MYOWNSERVER.NET');
-      //query.addAnswer(domain, ns_record, 300, 'ns');
-      //query.addAnswer('B.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
-      //server.send(query);
-      AQuery(query);
+      var a_record = new named.ARecord('192.168.0.91');
+      var ns_record = new named.NSRecord('A.NS.MYOWNSERVER.NET');
+      query.addAnswer(domain, ns_record, 300, 'ns');
+      query.addAnswer('A.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
+      a_record = new named.ARecord('130.245.169.69');
+      ns_record = new named.NSRecord('B.NS.MYOWNSERVER.NET');
+      query.addAnswer(domain, ns_record, 300, 'ns');
+      query.addAnswer('B.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
+      server.send(query);
+//      AQuery(query);
       break;
     case 'NS':
       NSQuery(query);
