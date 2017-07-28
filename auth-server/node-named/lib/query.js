@@ -18,7 +18,7 @@ function Query(arg) {
         this._qdCount = arg.qdCount;
         this._anCount = arg.anCount || 0;
         this._nsCount = arg.nsCount || 0;
-        this._arCount = arg.arCount || 0;
+        this._arCount = 0; //arg.arCount || 0;
         this._flags = arg.flags;
         this._question = arg.question;
         this._answers = [];
@@ -131,6 +131,7 @@ Query.prototype.addAnswer = function(name, record, ttl, type) {
 		this._nsCount++;
 		break;
 	case 'ar':
+		console.log("ADDITIONAL SECTION: " + JSON.stringify(answer));
 		this._additional.push(answer);
 		this._arCount++;
 		break;
