@@ -131,7 +131,6 @@ Query.prototype.addAnswer = function(name, record, ttl, type) {
 		this._nsCount++;
 		break;
 	case 'ar':
-		console.log("ADDITIONAL SECTION: " + JSON.stringify(answer));
 		this._additional.push(answer);
 		this._arCount++;
 		break;

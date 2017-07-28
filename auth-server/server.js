@@ -297,7 +297,16 @@ server.on('query', (query) => {
   if(!config.DEBUG) console.log(query.type() + ' Query: ' + domain);
   switch (type) {
     case 'A':
-      AQuery(query);
+      var a_record = new named.ARecord('192.168.0.91');
+      var ns_record = new named.NSRecord('A.NS.MYOWNSERVER.NET');
+      query.addAnswer(domain, ns_record, 300, 'ns');
+      query.addAnswer('A.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
+      a_record = new named.ARecord('130.245.169.69');
+      ns_record = new named.NSRecord('B.NS.MYOWNSERVER.NET');
+      query.addAnswer(domain, ns_record, 300, 'ns');
+      query.addAnswer('B.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
+      server.send(query);
+//      AQuery(query);
       break;
     case 'NS':
       NSQuery(query);
