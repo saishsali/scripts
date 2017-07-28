@@ -110,7 +110,7 @@ Server.prototype.send = function send(res) {
 
         try {
                 res._flags.qr = 1;  // replace with function
-                res._authoritative = (res._anCount) ? true : false; 
+                res._flags.aa = (res._anCount != 0);
                 res.encode();
         } catch (e) {
                 this._log.trace({err: e}, 'send: uncaughtException');
