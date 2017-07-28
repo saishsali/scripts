@@ -40,7 +40,8 @@ function AQuery(query) {
           var record = resp.fields;
           switch(resp._type) {
             case 'A':
-              var dns_record = new named.ARecord(record.ip_address[0]);
+              //var dns_record = new named.ARecord(record.ip_address[0]);
+              var dns_record = new named.ARecord('192.168.0.91');
               query.addAnswer(domain_original, dns_record, 300, 'an');
               //Cache A record
               memcached.set(resp._id, record.ip_address[0], config.CACHE_TIMEOUT, (err) => {
@@ -67,7 +68,8 @@ function AQuery(query) {
                   }
                   else { //Increase TTL
                     //Put glue A record in response
-                    var dns_record = new named.ARecord(data);
+                    //var dns_record = new named.ARecord(data);
+                    var dns_record = new named.ARecord('192.168.0.91');
                     // Get rid of pesky trailing "."
                     var domain_name_exact = nameserver.substring(0, nameserver.length-1);
                     query.addAnswer(domain_name_exact, dns_record, 300, 'ar');
@@ -100,7 +102,8 @@ function AQuery(query) {
                       if (record.found) {
                         var data = record.fields;
                         //Put glue A record in response
-                        var dns_record = new named.ARecord(data.ip_address[0]);
+                        //var dns_record = new named.ARecord(data.ip_address[0]);
+                        var dns_record = new named.ARecord('192.168.0.91');
                         // Get rid of pesky trailing "."
                         var domain_name_exact = data.domain_name_exact[0].substring(0, data.domain_name_exact[0].length-1);
                         query.addAnswer(domain_name_exact, dns_record, 300, 'ar');
@@ -136,7 +139,8 @@ function AQuery(query) {
       });
     }
     else  {
-      var dns_record = new named.ARecord(data);
+      //var dns_record = new named.ARecord(data);
+      var dns_record = new named.ARecord('192.168.0.91');
       query.addAnswer(domain_original, dns_record, 300, 'an');
       //Increase TTL
       memcached.touch(domain, config.CACHE_TIMEOUT, (err) => {
@@ -297,16 +301,16 @@ server.on('query', (query) => {
   if(!config.DEBUG) console.log(query.type() + ' Query: ' + domain);
   switch (type) {
     case 'A':
-      var a_record = new named.ARecord('192.168.0.91');
-      var ns_record = new named.NSRecord('A.NS.MYOWNSERVER.NET');
-      query.addAnswer(domain, ns_record, 300, 'ns');
-      query.addAnswer('A.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
-      a_record = new named.ARecord('130.245.169.69');
-      ns_record = new named.NSRecord('B.NS.MYOWNSERVER.NET');
-      query.addAnswer(domain, ns_record, 300, 'ns');
-      query.addAnswer('B.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
-      server.send(query);
-//      AQuery(query);
+      //var a_record = new named.ARecord('192.168.0.91');
+      //var ns_record = new named.NSRecord('A.NS.MYOWNSERVER.NET');
+      //query.addAnswer(domain, ns_record, 300, 'ns');
+      //query.addAnswer('A.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
+      //a_record = new named.ARecord('130.245.169.69');
+      //ns_record = new named.NSRecord('B.NS.MYOWNSERVER.NET');
+      //query.addAnswer(domain, ns_record, 300, 'ns');
+      //query.addAnswer('B.NS.MYOWNSERVER.NET', a_record, 300, 'ar');
+      //server.send(query);
+      AQuery(query);
       break;
     case 'NS':
       NSQuery(query);
