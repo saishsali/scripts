@@ -26,7 +26,7 @@ exports.LOG_TIME = true;
 
 //Auth-server settings
 exports.PORT = 1053;
-exports.IP = '::ffff:192.168.0.17';
+exports.IP = '::ffff:192.168.0.12';
 //exports.IP = '::ffff:192.168.0.239';
 
 //ES settings
