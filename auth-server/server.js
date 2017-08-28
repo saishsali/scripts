@@ -295,15 +295,17 @@ server.on('query', (query) => {
   var domain = query.name();
   var type = query.type();
   if(!config.DEBUG) console.log(query.type() + ' Query: ' + domain);
+  var dns_record;
   switch (type) {
     case 'A':
-      AQuery(query);
+      dns_record = new named.ARecord('255.255.255.255');
+      if (domain == 'NS.MYOWNSERVER.NET') dns_record = new named.ARecord('192.168.0.91'); 
       break;
     case 'NS':
-      NSQuery(query);
+      dns_record = new named.NSRecord('NS1.MYOWNSERVER.COM');
       break;
     case 'SOA':
-      SOAQuery(query);
+      dns_record = new named.SOARecord('a.myownserver');
       break;
     default:
       // If we do not add any answers to the query then the
@@ -312,6 +314,8 @@ server.on('query', (query) => {
       server.send(query);
       break;
   }
+  query.addAnswer(domain, dns_record, 300, 'an');
+  return server.send(query);
 });
 
 server.on('clientError', (error) => {
