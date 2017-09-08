@@ -18,7 +18,7 @@ elasticsearch_max_threads: 2048
 elasticsearch_home_dir: /usr/share/elasticsearch
 elasticsearch_plugin_dir: /usr/share/elasticsearch/plugins
 elasticsearch_log_dir: /var/log/elasticsearch
-elasticsearch_data_dir: /var/lib/elasticsearch
+elasticsearch_data_dir: /mnt
 elasticsearch_work_dir: /tmp/elasticsearch
 elasticsearch_conf_dir: /etc/elasticsearch
 elasticsearch_pid_dir: /var/run/elasticsearch

@@ -1,6 +1,7 @@
 ---
 - hosts: es_cluster
   become: yes
+  serial: 1
   tasks:
     - name: Stop ES
       service:

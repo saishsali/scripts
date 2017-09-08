@@ -151,6 +151,10 @@ thread_pool.bulk.queue_size: {{ elasticsearch_bulk_queue }}
 {% if elasticsearch_index_queue is defined %}
 thread_pool.index.queue_size: {{ elasticsearch_index_queue }}
 {% endif %}
+
+{% if elasticsearch_get_queue is defined %}
+thread_pool.get.queue_size: {{ elasticsearch_get_queue }}
+{% endif %}
 #node.max_local_storage_nodes: 1
 #
 # Require explicit names when deleting indices:

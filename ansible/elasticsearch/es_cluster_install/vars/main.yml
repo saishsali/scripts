@@ -6,6 +6,7 @@ elasticsearch_node_ingest: false
 elasticsearch_max_compilations: 30000
 elasticsearch_bulk_queue: -1
 elasticsearch_index_queue: -1
+elasticsearch_get_queue: -1
 elasticsearch_heap_size: 3g
 elasticsearch_network_host: 0.0.0.0
 elasticsearch_discovery_zen_ping_unicast_hosts: 192.168.0.204 # "[\"{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}\"]"
