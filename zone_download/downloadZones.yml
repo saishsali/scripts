@@ -1,0 +1,60 @@
+---
+- hosts: master
+  any_errors_fatal: true
+
+  vars_files:
+    - ../vars/ursa.yml
+
+  tasks:
+
+    - name: Ensure {{ zone_downloads_directory }} directory=exists
+      file: path={{ zone_downloads_directory }} state=directory
+
+    - name: Get today's date
+      shell: date +%Y-%m-%d
+      register: todaysDateOutput
+
+    - name: Set variables | todays_date
+      set_fact: todays_date={{ todaysDateOutput.stdout }}
+
+    - name: Set variables | todays_download_directory
+      set_fact: todays_download_directory={{ zone_downloads_directory}}/{{ todays_date }}
+
+    - name: Obtain previous day's date
+      shell: date -d "{{ todays_date }} - 1 day" +%Y-%m-%d
+      register: yesterdays_date_output
+
+    - name: Set variables | yesterdays_date
+      set_fact: yesterdays_date={{ yesterdays_date_output.stdout }}
+
+    - name: Set variables | yesterdays_download_directory
+      set_fact: yesterdays_download_directory={{ zone_downloads_directory}}/{{ yesterdays_date }}
+
+    - name: Ensure daily download directory=exists
+      file: path={{ todays_download_directory }} state=directory
+
+    - name: Download today's zone files.
+      command: python download.py {{ todays_download_directory }} {{ yesterdays_download_directory }} {{ czdap_zonedata_directory }}/nick_b.json {{ czdap_zonedata_directory }}/nick_g.json {{ czdap_zonedata_directory }}/nick_r.json
+      args:
+        chdir: "{{ czdap_zonedata_directory }}"
+      environment:
+        email_list: 'dnsanalyticsofficial@gmail.com'
+      ignore_errors: yes
+
+    - name: Check for missing zones.
+      shell: comm -23 <(ls {{ yesterdays_download_directory }} | cut -d . -f1) <(ls {{ todays_download_directory }} | cut -d . -f1)
+      register: missing_zones
+      args:
+        executable: /bin/bash
+
+    - name: Log missing zones
+      lineinfile:
+        dest={{ root_directory }}/dns_project/missing_zones.txt
+        insertafter=EOF
+        line='{{ item }} NOT FOUND ON{{ ":" }} {{ todays_date }}'
+        create=yes
+      with_items:
+        - "{{ missing_zones.stdout_lines | default([]) }}"
+
+    - name: Rename zones
+      command: "{{bash_scripts_directory}}//sanitize_dates_single.sh {{ todays_download_directory }}"
