@@ -1,0 +1,55 @@
+- hosts: master:rabbitmq_master:es_master
+  name: Gathering facts
+  tasks: []
+
+- hosts: master
+  become: yes
+  any_errors_fatal: true
+
+  vars_files:
+    - vars/ursa.yml
+
+  tasks:
+
+    - name: Set variable | es_master_ip
+      set_fact: es_master_ip="{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}"
+
+    - name: Create Elasticsearch index - current-ips
+      uri:
+        url: http://{{ es_master_ip }}:9200/current-ips
+        method: PUT
+        body: "{{ lookup('template', 'templates/resolutionsIndexMapping.json.j2') }}"
+        body_format: json
+        status_code: 200, 400
+
+    - name: Create Elasticsearch index - past-ips
+      uri:
+        url: http://{{ es_master_ip }}:9200/past-ips
+        method: PUT
+        body: "{{ lookup('template', 'templates/resolutionsIndexMapping.json.j2') }}"
+        body_format: json
+        status_code: 200, 400
+
+- hosts: rabbit_master
+  become: yes
+  any_errors_fatal: true
+
+  vars_files:
+    - vars/ursa.yml
+
+  tasks:
+
+  vars:
+    should_install: false
+    config_rabbitmq_ha: true
+    enable_rabbitmq_clustering: false
+    rabbitmq_master: "{{ hostvars[groups['rabbit_master'][0]]['name'] }}"
+    rabbitmq_config:
+      - exchange_name: "{{ ip_resolution_extraction_exchange }}"
+        type: topic
+        queue_name: "{{ ip_resolution_extraction_queue }}"
+        durable: true
+        routing_key: ""
+
+  roles:
+    - role: rabbitmq

@@ -1,0 +1,14 @@
+---
+- hosts: rabbit_mq_cluster
+  become: yes
+    
+  tasks:
+    # - name: rabbitmq_clustering | UNMARKING clustered
+    #   file:
+    #     path: /etc/rabbitmq/clustered
+    #     state: absent
+
+    - name: rabbitmq_cluster | stopping rabbitmq-server
+      service:
+        name: rabbitmq-server
+        state: stopped

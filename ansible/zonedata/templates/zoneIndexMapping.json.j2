@@ -1,0 +1,168 @@
+{
+    "settings": {
+        "number_of_shards": {{ num_shards }},
+        "number_of_replicas": 0,
+        "index":{
+            "analysis":{
+               "analyzer":{
+                  "keylower":{
+                     "tokenizer":"keyword",
+                     "filter":"lowercase"
+                  }
+               }
+            }
+        }
+    },
+    "mappings": {
+        "NS": {
+            "properties": {
+                "domain_name": {
+                    "type": "text",
+                    "analyzer":"keylower",
+                    "store": true
+                },
+                "domain_name_exact": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "domain_name_length": {
+                    "type": "integer",
+                    "store": true
+                },
+                "type": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "is_registered": {
+                    "type": "boolean",
+                    "store": true
+                },
+                "last_registered": {
+                    "type":   "date",
+                    "store": true
+                },
+                "last_deregistered": {
+                    "type":   "date",
+                    "store": true
+                },
+                "registered_history": {
+                    "type":   "date",
+                    "store": true
+                },
+                "deregistered_history": {
+                    "type":   "date",
+                    "store": true
+                },
+                "name_servers": {
+                    "type": "text",
+                    "store": true
+                },
+                "name_servers_exact": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "past_name_servers": {
+                    "type": "text",
+                    "store": true
+                },
+                "past_name_servers_exact": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "domain_name_segmented": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "domain_name_pronounceability": {
+                    "type": "double",
+                    "store": true
+                },
+                "domain_name_segmented_pronounceability": {
+                    "type": "double",
+                    "store": true
+                },
+                "domain_name_segmented_length": {
+                    "type": "integer",
+                    "store": true
+                },
+                "sign": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "zone": {
+                    "type": "keyword",
+                    "store": true
+                }
+            }
+        },
+        "A": {
+            "properties": {
+                "domain_name": {
+                    "type": "text",
+                    "analyzer":"keylower",
+                    "store": true
+                },
+                "domain_name_exact": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "domain_name_length": {
+                    "type": "integer",
+                    "store": true
+                },
+                "type": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "ip_address": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "is_registered": {
+                    "type": "boolean",
+                    "store": true
+                },
+                "last_registered": {
+                    "type":   "date",
+                    "store": true
+                },
+                "last_deregistered": {
+                    "type":   "date",
+                    "store": true
+                },
+                "registered_history": {
+                    "type":   "date",
+                    "store": true
+                },
+                "deregistered_history": {
+                    "type":   "date",
+                    "store": true
+                },
+                "sign": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "zone": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "domain_name_segmented": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "domain_name_pronounceability": {
+                    "type": "double",
+                    "store": true
+                },
+                "domain_name_segmented_pronounceability": {
+                    "type": "double",
+                    "store": true
+                },
+                "domain_name_segmented_length": {
+                    "type": "integer",
+                    "store": true
+                }
+            }
+        }
+    }
+}

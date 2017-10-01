@@ -1,0 +1,174 @@
+---
+#This playbook is responsible for the ingestion of an initial import.
+
+- hosts: master:rabbitmq_master:es_master:ingesters
+  name: Gathering facts
+  tasks: []
+
+- hosts: master
+  become: yes
+  any_errors_fatal: true
+
+  vars_files:
+    - vars/ursa.yml
+
+  tasks:
+
+    - name: Fail check | for input variables
+      fail: msg="Must provide a date 'dest_index' for which to to perform an import."
+      when: dest_index is not defined
+
+    - include: tasks/verify_project_directories.yml
+      register: verify_project_directories_result
+      failed_when: "'FAILED' in verify_project_directories_result.stderr"
+
+    - name: Update bash script for delta creation.
+      template: src=templates/create_deltas.sh.j2
+                dest={{ config_directory }}/create_deltas.sh
+                owner=root
+                group=root
+                mode=0755
+
+    - name: Update bash script for zone ingestion.
+      template: src=templates/zone_ingestion.sh.j2
+                dest={{ config_directory }}/zone_ingestion.sh
+                owner=root
+                group=root
+                mode=0755
+
+    - name: Update bash script to create file for GNU Parallel.
+      template: src=templates/parallel_file_gen.sh.j2
+                dest={{ config_directory }}/parallel_file_gen.sh
+                owner=root
+                group=root
+                mode=0755
+
+    - name: Set variable | es_master_ip
+      set_fact: es_master_ip="{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}"
+
+    - name: Create Elasticsearch index - {{ dest_index }}
+      uri:
+        url: http://{{ es_master_ip }}:9200/{{ dest_index }}/
+        method: PUT
+        body: "{{ lookup('template', 'templates/zoneIndexMapping.json.j2') }}"
+        body_format: json
+
+- hosts: rabbit_master
+  tags:
+      - rabbit-setup
+  become: yes
+  any_errors_fatal: true
+
+  vars_files:
+    - vars/ursa.yml
+
+  tasks:
+
+  vars:
+    should_install: false
+    config_rabbitmq_ha: false
+    enable_rabbitmq_clustering: false
+    should_set_policy: false
+    rabbitmq_master: "{{ hostvars[groups['rabbit_master'][0]]['name'] }}"
+    rabbitmq_config:
+      - exchange_name: "{{ backfill_exchange }}"
+        type: direct
+        queue_name: "{{ backfill_queue }}"
+        durable: true
+        routing_key: ""
+
+  roles:
+    - role: rabbitmq
+
+- hosts: rabbit_master
+  tags:
+    - rabbit-setup
+  become: yes
+  any_errors_fatal: true
+
+  vars_files:
+    - vars/ursa.yml
+
+  tasks:
+
+  vars:
+    should_install: false
+    config_rabbitmq_ha: false
+    enable_rabbitmq_clustering: false
+    should_set_policy: false
+    rabbitmq_master: "{{ hostvars[groups['rabbit_master'][0]]['name'] }}"
+    rabbitmq_config:
+      - exchange_name: "{{ initial_exchange }}"
+        type: direct
+        queue_name: "{{ initial_queue }}"
+        durable: true
+        routing_key: ""
+
+  roles:
+    - role: rabbitmq
+
+- hosts: ingesters
+  tags:
+    - logstash-ingesters
+  become: yes
+  #any_errors_fatal: true
+
+  vars_files:
+    - vars/ursa.yml
+
+  tasks:
+
+    - include: tasks/create_logstash_service.yml
+      with_items:
+        - { service_name: '{{ logstash_initial_service }}', pipeline_batch_size: '{{ batch_size }}', heap_size: '{{ logstash_heap_size }}' }
+        - { service_name: '{{ logstash_delta_service }}', pipeline_batch_size: '{{ batch_size }}', heap_size: '{{ logstash_heap_size }}' }
+
+    #although it could be hard coded in the include, it's better to keep a general
+    #set of tasks that can be used for any logstash function and deal with
+    #setting the pipeline configuration files "outside" of the custom service creation
+
+    - name: Set variables | initial_logstash_config_directory
+      set_fact: initial_logstash_config_directory="/etc/{{ logstash_initial_service }}/conf.d"
+
+    - name: Set variables | delta_logstash_config_directory
+      set_fact: delta_logstash_config_directory="/etc/{{ logstash_delta_service }}/conf.d"
+
+    - name: Update Logstash Configuration for intial import
+      template: src=templates/formatted-initial-import.conf.j2
+                dest={{ initial_logstash_config_directory }}/formatted-initial-import.conf
+                owner={{ logstash_user }}
+                group={{ logstash_user }}
+                mode=0644
+
+    - name: Update Logstash Configuration for delta update
+      template: src=templates/formatted-delta-update.conf.j2
+                dest={{ delta_logstash_config_directory }}/formatted-delta-update.conf
+                owner={{ logstash_user }}
+                group={{ logstash_user }}
+                mode=0644
+
+    - name: Ensure {{ project_folder }} directory exists
+      file: path={{ project_folder }} state=directory
+
+    - name: Ensure {{ config_directory }} directory exists
+      file: path={{ config_directory }} state=directory
+
+    - name: Ensure {{ logs_directory }} directory exists
+      file: path={{ logs_directory }} state=directory
+
+    - name: Update Grok Patterns File for Zone Ingestion
+      template: src=templates/formatted-patterns.j2
+                dest={{ logstash_formatted_patterns_path }}
+                owner=root
+                group=root
+                mode=0644
+
+    - name: Restart {{ logstash_initial_service }}
+      service: name={{ logstash_initial_service }}
+               state=restarted
+               enabled=no
+
+    - name: Restart {{ logstash_delta_service }}
+      service: name={{ logstash_delta_service }}
+               state=restarted
+               enabled=no

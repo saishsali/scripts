@@ -1,0 +1,106 @@
+---
+verisign_user: stonybro
+verisign_pass: mlpo327
+zone: ""
+dest_index: "dns-data"
+
+todays_date: "{{ ansible_date_time.date }}"
+batch_size: 5000
+prefetch_count: 100
+
+#ElasticSearch parameters
+#dest_index: "{{ zone_domain }}-full"
+num_logstash_output_workers_for_master_node: 8 #Half of total CPUs available on master node
+num_es_workers_for_data_node: 2 #Half of total CPUs available on data node
+num_shards: 30
+
+#RabbitMQ parameters
+rabbitmq_user: rabbitmqadmin
+rabbitmq_pass: rabbitmqadmin
+rabbitmq_vhost: /
+
+#Root Project Directories
+project_user: ubuntu
+root_directory: /home/ubuntu
+repo_directory: "{{ root_directory }}/scripts"
+persistence_directory: "{{ root_directory }}/persistence"
+ingest_directory: "{{ root_directory }}/ingestion"
+process_directory: "{{ ingest_directory }}/process"
+download_directory: "{{ ingest_directory }}/download"
+
+#Inner Project Directories
+playbooks_directory: "{{ repo_directory }}/'Ansible Playbooks'/zone_playbooks"
+scripts_directory: "{{ repo_directory }}/'Node Scripts'"
+rabbitmq_scripts_directory: "{{ repo_directory }}/'Rabbitmq Scripts'"
+bash_scripts_directory: "{{ repo_directory }}/'Bash Scripts'"
+czdap_zonedata_directory: "{{ repo_directory }}/czdap-tools/zonedata-download"
+
+
+dns_project_folder: "{{ root_directory }}/dns_project"
+project_folder: "{{ dns_project_folder }}/{{ dest_index }}"
+zone_downloads_directory: "{{ persistence_directory }}/zone_downloads"
+blacklist_downloads_directory: "{{ persistence_directory }}/blacklist_downloads"
+origin_as_downloads_directory: "{{ persistence_directory }}/origin_as_downloads"
+data_directory: "{{ project_folder }}/data"
+config_directory: "{{ project_folder }}/config"
+logs_directory: "{{ project_folder }}/logs"
+comm_directory: "{{ data_directory }}/comm_output"
+zone_sorts_directory: "{{ data_directory }}/zoneSorts"
+formatted_delta_directory: "{{ data_directory }}/formattedDeltas"
+history_directory: "{{ config_directory }}/history"
+parallel_directory: "{{ config_directory }}/parallel"
+
+#Project files
+parallel_file_gen_path: "{{ config_directory }}/parallel_file_gen.sh"
+comm_format_script_path: "{{ process_directory }}/comm_format.py"
+send_to_rabbit_ingestion_path: "{{ process_directory }}/ingestion-blocking.py"
+print_previous_days_date_script_path: "{{ process_directory }}/printPreviousDaysDate.js"
+print_dates_in_range_script_path: "{{ process_directory }}/printDatesInRange.js"
+check_rabbitmq_and_wait_script_path: "{{ process_directory }}/wait-until-empty.py"
+
+#Logstash
+logstash_bin_directory: "/opt/logstash/bin/logstash"
+logstash_formatted_patterns_path: "{{ dns_project_folder }}/formatted-patterns"
+logstash_formatted_delta_to_rabbit_conf_path_initial: "{{ config_directory }}/formatted-delta-to-rabbit-initial.conf"
+logstash_formatted_delta_to_rabbit_conf_path_delta: "{{ config_directory }}/formatted-delta-to-rabbit-delta.conf"
+logstash_es_to_rabbit_conf_path: "{{ config_directory }}/es-to-rabbit.conf"
+logstash_formatted_delta_to_rabbit_log_file: "{{ logs_directory }}/formatted-delta-to-rabbit"
+logstash_delta_rabbit_to_es_log_file: "{{ logs_directory }}/rabbit-delta-to-es.log"
+logstash_es_to_rabbit_log_file: "{{ logs_directory }}/es-to-rabbit.log"
+
+logstash_user: logstash
+logstash_service: "logstash_{{ dest_index }}"
+logstash_initial_service: "{{ logstash_service }}_initial"
+logstash_delta_service: "{{ logstash_service }}_delta"
+logstash_max_open_files: 65536
+logstash_heap_size: 4g
+# logstash_post_job_service_directory: "/etc/init.d/{{ logstash_service }}_post_job"
+# logstash_post_job_config_directory: "/etc/logstash/{{ logstash_service }}_post_job"
+# logstash_current_ips_service_directory: "/etc/init.d/logstash_current_ips"
+# logstash_current_ips_job_config_directory: "/etc/logstash/logstash_current_ips"
+# logstash_past_ips_service_directory: "/etc/init.d/logstash_past_ips"
+# logstash_past_ips_job_config_directory: "/etc/logstash/logstash_past_ips"
+
+
+
+#ElasticSearch
+index_mapping_file_path: "{{ config_directory }}/zoneIndexMapping.json"
+resolutions_mapping_file_path: "{{ dns_project_folder }}/resolutionsIndexMapping.json"
+source_index: ""
+match: ""
+
+#Rabbitmq
+initial_queue: "{{ dest_index }}-initial-q"
+initial_exchange: "{{ dest_index }}-initial-ex"
+backfill_queue: "{{ dest_index }}-backfill-q"
+backfill_exchange: "{{ dest_index }}-backfill-ex"
+ip_resolution_extraction_exchange: "ip-resolution-extraction-ex"
+ip_resolution_extraction_queue: "ip-resolution-extraction-q"
+current_ip_ingest_exchange: "current-ip-ingest-ex"
+current_ip_ingest_queue: "current-ip-ingest-q"
+past_ip_ingest_exchange: "past-ip-ingest-ex"
+past_ip_ingest_queue: "past-ip-ingest-q"
+
+#Powerdns
+powerdns_config_path: "/etc/powerdns"
+powerdns_zone_path: "{{ powerdns_config_path }}/bind/"

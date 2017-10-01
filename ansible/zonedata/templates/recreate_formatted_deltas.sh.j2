@@ -1,0 +1,64 @@
+#!/bin/bash
+
+
+#Check for proper arguments.
+MINPARAMS=3
+
+if [ $# -lt "$MINPARAMS" ];
+then
+	echo
+		echo -e "ERROR: Improper arguments provided.\n\n"
+		echo -e "Usage: $0 <zone> <todays_date> <yesterdays_date>\n"
+		echo -e "where the dates are in the format YYYY-MM-DD\n\n"
+	exit 1
+fi
+
+#Declare constants
+FILE1="$1-$2"
+FILE2="$1-$3"
+ZIPPED_SUFFIX=".zone.gz"
+SORTED_SUFFIX="-sorted"
+FORMATTED_SUFFIX="-formatted-delta"
+COMM_SUFFIX="-comm"
+ZIP1="$FILE1$ZIPPED_SUFFIX"
+ZIP2="$FILE2$ZIPPED_SUFFIX"
+SORT1="$FILE1$SORTED_SUFFIX"
+SORT2="$FILE2$SORTED_SUFFIX"
+COMM="$FILE1$COMM_SUFFIX"
+FORMATTED1="$1-$2$FORMATTED_SUFFIX"
+# Unzip and sort
+# Example zone_download file: com-2016-06-06.zone.gz
+# Example sorted file: com-2016-06-06-sorted
+# http://www.tldp.org/LDP/abs/html/x9644.html
+if [ ! -f "{{ zone_downloads_directory }}"/$2/$ZIP1 ]; then
+	echo "Date mismatch in zone file download -- $ZIP1"
+	exit 1
+fi
+
+if [ ! -f "{{ formatted_delta_directory }}/$2/$1-$2$FORMATTED_SUFFIX.gz" ]; then
+
+	if [ ! -f "{{ zone_sorts_directory }}/$2/$SORT1" ]; then
+		gunzip -dk < "{{ zone_downloads_directory }}/$2/$ZIP1" \
+		| LC_ALL=C sort -S 40% --parallel=12 > "{{ zone_sorts_directory }}/$2/$SORT1" &
+	fi
+	if [ ! -f "{{ zone_sorts_directory }}/$3/$SORT2" ]; then
+		gunzip -k < "{{ zone_downloads_directory }}/$3/$ZIP2" \
+		| LC_ALL=C sort -S 40% --parallel=12 > "{{ zone_sorts_directory }}/$3/$SORT2" &
+	fi
+	wait
+
+
+	if [ ! -f "{{ comm_directory }}/$2/$COMM" ]; then
+		LC_ALL=C comm "{{ zone_sorts_directory }}/$3/$SORT2" "{{ zone_sorts_directory }}/$2/$SORT1" > "{{ comm_directory }}/$2/$COMM" &
+		COMMPID=$!
+		wait $COMMPID
+		sudo rm "{{ zone_sorts_directory }}/$3/$SORT2"
+	fi
+	if [ ! -f "{{ formatted_delta_directory }}/$2/$FORMATTED1" ]; then
+		python3 {{ comm_format_script_path }} "{{ comm_directory }}/$2/$COMM" "{{ formatted_delta_directory }}/$2/$FORMATTED1" $1 &
+		FORMATPID=$!
+		wait $FORMATPID
+		sudo rm "{{ comm_directory }}/$2/$COMM"
+	fi
+	gzip "{{ formatted_delta_directory }}/$2/$1-$2$FORMATTED_SUFFIX"
+fi

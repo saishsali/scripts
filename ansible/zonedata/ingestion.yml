@@ -1,0 +1,75 @@
+---
+#This playbook is responsible for the ingestion of an initial import.
+
+- hosts: master
+  become: yes
+  any_errors_fatal: true
+  vars_files:
+    - vars/ursa.yml
+
+  tasks:
+
+#Obtain basic information about today's download/ingestion.
+
+    - name: Fail check | for input variables
+      fail: msg="Must provide a date 'dest_index' for which to to perform an import."
+      when: dest_index is not defined
+
+    - name: Ensure {{ history_directory }} directory exists
+      file: path={{ history_directory }} state=directory
+
+# check if main-history
+    - name: Check if {{ dest_index }}.main-history file exists
+      stat: path={{ history_directory }}/{{ dest_index }}.main-history
+      register: historyFileExists
+
+# if main-history file exists, parse that
+
+    - name: Get last date recorded in {{ dest_index }}.main-history
+      command: tail -n 1 {{ history_directory }}/{{ dest_index }}.main-history
+      register: historyFileOutput
+      when: historyFileExists.stat.exists == true
+
+    - name: Obtain next_day_to_ingest date
+      shell: date -d "{{ historyFileOutput.stdout }} + 1 day" +%Y-%m-%d
+      register: next_day_to_ingest
+      when: historyFileExists.stat.exists == true
+
+    - name: Set variable | next_day_to_ingest_stdout
+      set_fact: start_ingestion_date="{{ next_day_to_ingest.stdout }}"
+      when: historyFileExists.stat.exists == true
+
+    - name: Obtain todays_date date
+      shell: date +%Y-%m-%d
+      register: todays_date
+      when: historyFileExists.stat.exists == true
+
+    # Script Usage: node <script_path> <start_date> <end_date>
+    - name: Run script to gather list of dates from {{ start_ingestion_date }} up through {{ todays_date.stdout }}
+      shell: node {{ print_dates_in_range_script_path }} {{ start_ingestion_date }} {{ todays_date.stdout }}
+      register: datesOutput
+      when: historyFileExists.stat.exists == true
+
+    - name: Set variable | list_of_dates
+      set_fact: list_of_dates={{ datesOutput.stdout_lines }}
+      when: historyFileExists.stat.exists == true
+
+# else, parse dates in folder
+
+    - name: Obtain list of dates.
+      shell: ls {{ zone_downloads_directory }} | cut -f 1
+      register: datesOutput
+      when: historyFileExists.stat.exists == false
+
+    - name: Set variable | list_of_dates
+      set_fact: list_of_dates={{ datesOutput.stdout_lines }}
+      when: historyFileExists.stat.exists == false
+
+#Verify that directories needed for ingestion exist.
+
+    - include: zone_ingestion_intermediate.yml
+      with_items:
+        - "{{ list_of_dates | default([]) }}"
+      ignore_errors: yes
+      loop_control:
+        loop_var: outer_item

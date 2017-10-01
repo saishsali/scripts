@@ -1,0 +1,98 @@
+#this script creates a custom logstash service
+# arguments: service_name, pipeline_batch_size, LS heap size
+
+#first step is to ensure that the proper directories exist
+
+- name: Set variables | logstash_service_name
+  set_fact: logstash_service_name="{{ item.service_name }}"
+
+- name: Stop {{ logstash_initial_service }} if it exists
+  service: name={{ logstash_initial_service }}
+           state=stopped
+           enabled=no
+  ignore_errors: yes
+
+- name: Set variables | logstash_heap_size
+  set_fact: logstash_heap_size="{{ item.heap_size }}"
+
+- name: Set variables | pipeline_batch_size
+  set_fact: pipeline_batch_size="{{ item.pipeline_batch_size }}"
+
+- name: Set variables | logstash_settings_directory
+  set_fact: logstash_settings_directory="/etc/{{ logstash_service_name }}"
+
+- name: Set variables | logstash_config_directory
+  set_fact: logstash_config_directory="{{ logstash_settings_directory }}/conf.d"
+
+- name: Set variables | logstash_data_directory
+  set_fact: logstash_data_directory="/var/lib/{{ logstash_service_name }}"
+
+- name: Set variables | logstash_logs_directory
+  set_fact: logstash_logs_directory="/var/log/{{ logstash_service_name }}"
+
+- name: Ensure {{ logstash_settings_directory }} directory exists
+  file: path={{ logstash_settings_directory }}
+        state=directory
+        owner=logstash
+        group=logstash
+        mode=0755
+        recurse=yes
+
+- name: Ensure {{ logstash_config_directory }} directory exists
+  file: path={{ logstash_config_directory }}
+        state=directory
+        owner=logstash
+        group=logstash
+        mode=0755
+        recurse=yes
+
+- name: Ensure {{ logstash_data_directory }} directory exists
+  file: path={{ logstash_data_directory }}
+        state=directory
+        owner=logstash
+        group=logstash
+        mode=0755
+        recurse=yes
+
+- name: Ensure {{ logstash_logs_directory }} directory exists
+  file: path={{ logstash_logs_directory }}
+        state=directory
+        owner=logstash
+        group=root
+        mode=0755
+        recurse=yes
+
+#start putting the settings file in the directory
+
+- name: Set logstash.yml file for {{ logstash_service_name }} in {{ logstash_settings_directory }}
+  template: src=templates/logstash.yml.j2
+            dest={{ logstash_settings_directory }}/logstash.yml
+            owner=logstash
+            group=logstash
+            mode=0644
+
+- name: Set log4j2.properties file for {{ logstash_service_name }} in {{ logstash_settings_directory }}
+  template: src=templates/jvm.options.j2
+            dest=/etc/logstash/jvm.options
+            owner=logstash
+            group=logstash
+            mode=0644
+
+- name: Set log4j2.properties file for {{ logstash_service_name }} in {{ logstash_settings_directory }}
+  template: src=templates/log4j2.properties.j2
+            dest={{ logstash_settings_directory }}/log4j2.properties
+            owner=logstash
+            group=logstash
+            mode=0644
+
+#place startup.option in main settings path and call system-install
+
+- name: Set startup.options file for {{ logstash_service_name }} in /etc/logstash
+  template: src=templates/startup.options.j2
+            dest=/etc/logstash/startup.options
+            owner=logstash
+            group=logstash
+            mode=0644
+
+- name: Call system-install to add {{ logstash_service_name }} script to /etc/init/
+  command: /usr/share/logstash/bin/system-install

@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+
+input {
+	stdin {}
+}
+filter {}
+output {
+	rabbitmq {
+	    exchange => "{{ exchange_name }}"
+	    exchange_type => "direct"
+	    durable => true
+	    key => ""
+	    host => [{% for host in groups['rabbit_mq_cluster'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+	    workers => 1
+	    codec => json
+	    user => {{ rabbitmq_user }}
+	    password => {{ rabbitmq_pass }}
+	}
+	#stdout { codec => rubydebug }
+	#stdout { codec => line }
+}

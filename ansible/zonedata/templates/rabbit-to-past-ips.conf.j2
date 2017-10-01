@@ -1,0 +1,30 @@
+input {
+	rabbitmq{
+		host => [{% for host in groups['rabbit_mq_cluster'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+		ack => false
+		prefetch_count => {{ prefetch_count }}
+		#arguments => { "x-ha-policy" => "all" }
+		durable => true
+		exchange => "{{ past_ip_ingest_exchange }}"
+		key => ""
+		queue => "{{ past_ip_ingest_queue }}"
+		vhost => "/"
+		codec => json
+		user => {{ rabbitmq_user }}
+	    password => {{ rabbitmq_pass }}
+	}
+}
+filter {
+}
+output {
+	#stdout{codec=>rubydebug}
+	#stdout { codec => line }
+	elasticsearch {
+		hosts => [{% for host in groups['es_data_nodes'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+		index => "past-ips"
+		workers => {{ num_es_workers_for_data_node }}
+		flush_size => {{ batch_size }}
+		action => "index"
+		document_type => "A"
+	}
+}

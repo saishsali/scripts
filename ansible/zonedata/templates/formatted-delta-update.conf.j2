@@ -1,0 +1,213 @@
+input {
+	rabbitmq{
+		host => [{% for host in groups['rabbit_mq_cluster'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+		ack => true
+		prefetch_count => {{ batch_size }}
+		#arguments => { "x-ha-policy" => "all" }
+		durable => true
+		exchange => "{{ backfill_exchange }}"
+		key => ""
+		queue => "{{ backfill_queue }}"
+		vhost => "{{ rabbitmq_vhost }}"
+		codec => json
+		user => {{ rabbitmq_user }}
+	    password => {{ rabbitmq_pass }}
+	}
+}
+filter {
+	grok {
+		patterns_dir => "{{ logstash_formatted_patterns_path }}"
+		match => { "message" => ["%{REGISTEREDORUPDATEDNSRECORD}", "%{REGISTEREDORUPDATEDARECORD}", "%{DEREGISTEREDRECORD}"]}
+	}
+	if "_grokparsefailure" in [tags] {
+		drop {}
+	}
+	mutate{
+		strip => ["domain_name"]
+	}
+	if([sign] == "+"){
+		mutate {
+			add_field => { "domain_name_exact" => "%{domain_name}"}
+		}
+		ruby {
+			code => '
+				event.set("domain_name_length", event.get("domain_name_exact").length);
+				event.set("is_registered", true);
+				event.set("last_registered", event.get("date"));
+				event.set("registered_history", event.get("date"));
+				event.set("deregistered_history", []);
+			'
+		}
+		if([type] == "NS"){
+			#mutate{
+			#	split => {"name_servers" => " "}
+			#}
+			ruby {
+				code => '
+				event.set("name_servers", event.get("name_servers").split(" "));
+	            event.set("name_servers_exact", event.get("name_servers"));
+	            event.set("past_name_servers", event.get("name_servers"));
+	        	event.set("past_name_servers_exact", event.get("name_servers"));
+	        	'
+			}
+		}
+		if([type] == "A"){
+			ruby{
+				code => '
+				event.set("ip_address", event.get("ip_address").split(" "));
+				'
+			}
+		}
+	}
+	else if([sign] == "-"){
+		ruby {
+			code => '
+				event.set("last_deregistered", event.get("date"));
+				event.set("deregistered_history", event.get("date"));
+				event.set("is_registered", false);
+			'
+		}
+	}
+	else if([sign] == "~"){
+		if([type] == "NS"){
+			#mutate{
+			#	split => {"name_servers" => " "}
+			#}
+			ruby {
+				code => '
+				event.set("name_servers", event.get("name_servers").split(" "));
+	            event.set("name_servers_exact", event.get("name_servers"));
+	            event.set("past_name_servers", event.get("name_servers"));
+	        	event.set("past_name_servers_exact", event.get("name_servers"));
+	        	'
+			}
+		}
+		if([type] == "A"){
+			ruby{
+				code => '
+				event.set("ip_address", event.get("ip_address").split(" "));
+				'
+			}
+		}
+	}
+	mutate{
+		remove_field => ["message", "date", "host"]
+		#convert => { "is_registered" => "boolean"}
+	}
+}
+output {
+	if ([sign] == "+") {
+		if([type] == "NS"){
+			elasticsearch {
+				hosts => [{% for host in groups['es_data_nodes'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+				index => "{{ dest_index}}"
+				manage_template => false
+				flush_size => {{ batch_size }}
+				routing => "%{domain_name}"
+				action => "update"
+				document_id => "%{domain_name}"
+				doc_as_upsert => true
+				script_lang => "painless"
+				script_type => "inline"
+				script => '
+					ctx._source.name_servers = params.event.get("name_servers");
+					ctx._source.name_servers_exact = params.event.get("name_servers_exact");
+					ctx._source.past_name_servers.add(params.event.get("past_name_servers"));
+					ctx._source.past_name_servers_exact.add(params.event.get("past_name_servers_exact"));
+					ctx._source.is_registered = params.event.get("is_registered");
+					ctx._source.last_registered = params.event.get("last_registered");
+					ctx._source.registered_history.add(params.event.get("last_registered"));
+				'
+			}
+		}
+		else if([type] == "A"){
+			elasticsearch {
+				hosts => [{% for host in groups['es_data_nodes'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+				index => "{{ dest_index}}"
+				manage_template => false
+				flush_size => {{ batch_size }}
+				routing => "%{domain_name}"
+				action => "update"
+				document_id => "%{domain_name}"
+				doc_as_upsert => true
+				script_lang => "painless"
+				script_type => "inline"
+				script => '
+					ctx._source.ip_address = params.event.get("ip_address");
+					ctx._source.is_registered = params.event.get("is_registered");
+					ctx._source.last_registered = params.event.get("last_registered");
+				'
+			}
+		}
+	}
+	else if ([sign] == "-"){
+		if([type] == "NS"){
+			elasticsearch {
+				hosts => [{% for host in groups['es_data_nodes'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+				index => "{{ dest_index}}"
+				manage_template => false
+				flush_size => {{ batch_size }}
+				routing => "%{domain_name}"
+				action => "update"
+				document_id => "%{domain_name}"
+				script_lang => "painless"
+				script_type => "inline"
+				script => '
+					ctx._source.is_registered = params.event.get("is_registered");
+					ctx._source.last_deregistered = params.event.get("last_deregistered");
+					ctx._source.deregistered_history.add(params.event.get("deregistered_history"));
+				'
+			}
+		}
+		else if([type] == "A"){
+			elasticsearch {
+				hosts => [{% for host in groups['es_data_nodes'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+				index => "{{ dest_index}}"
+				routing => "%{domain_name}"
+				manage_template => false
+				flush_size => {{ batch_size }}
+				action => "delete"
+				document_id => "%{domain_name}"
+			}
+		}
+	}
+	else if([sign] == "~"){
+		if([type] == "NS"){
+			elasticsearch {
+				hosts => [{% for host in groups['es_data_nodes'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+				index => "{{ dest_index}}"
+				manage_template => false
+				flush_size => {{ batch_size }}
+				routing => "%{domain_name}"
+				action => "update"
+				document_id => "%{domain_name}"
+				script_lang => "painless"
+				script_type => "inline"
+				script => '
+					ctx._source.name_servers = params.event.get("name_servers");
+					ctx._source.name_servers_exact = params.event.get("name_servers_exact");
+					ctx._source.past_name_servers.add(params.event.get("past_name_servers"));
+					ctx._source.past_name_servers_exact.add(params.event.get("past_name_servers_exact"));
+				'
+			}
+		}
+		else if([type] == "A"){
+			elasticsearch {
+				hosts => [{% for host in groups['es_data_nodes'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+				index => "{{ dest_index}}"
+				manage_template => false
+				flush_size => {{ batch_size }}
+				routing => "%{domain_name}"
+				action => "update"
+				document_id => "%{domain_name}"
+				script_lang => "painless"
+				script_type => "inline"
+				script => '
+					ctx._source.ip_address = params.event.get("ip_address");
+				'
+			}
+		}
+	}
+	#stdout{codec=>rubydebug}
+	#stdout { codec => line }
+}

@@ -1,0 +1,41 @@
+input {
+	rabbitmq{
+		host => [{% for host in groups['rabbit_mq_cluster'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+		ack => true
+		prefetch_count => {{ batch_size }}
+		#arguments => { "x-ha-policy" => "all" }
+		durable => true
+		exchange => "{{ initial_exchange }}"
+		key => ""
+		queue => "{{ initial_queue }}"
+		vhost => "{{ rabbitmq_vhost }}"
+		codec => json
+		user => {{ rabbitmq_user }}
+	    password => {{ rabbitmq_pass }}
+	}
+}
+filter {
+	grok {
+		patterns_dir => "{{ logstash_blacklist_patterns_path }}"
+		match => { "message" => ["%{malicious_information}"]}
+	}
+	if "_grokparsefailure" in [tags] {
+		drop {}
+	}
+	ruby{
+		code => "
+		event['dates'] = event['dates'].split('\t');
+		"
+	}
+}
+output {
+	elasticsearch {
+		hosts => [{% for host in groups['es_data_nodes'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+		index => "blacklist"
+		workers => {{ num_es_workers_for_data_node }}
+		flush_size => {{ batch_size }}
+		action => "index"
+		document_id => "%{domain_name}"
+	}
+	#stdout{codec=>rubydebug}
+}

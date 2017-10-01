@@ -1,0 +1,61 @@
+---
+# Extract either all records from ElasticSearch or the ones resulting from a query.
+
+- hosts: master
+  become: yes
+  any_errors_fatal: true
+
+  vars_files:
+    - vars/vars.yml
+
+  tasks:
+
+    - name: Fail check | for input variables
+      fail: msg="Must provide 'source_index' from which to extract records from."
+      when: source_index == ""
+      tags:
+        - debug
+
+    - name: Debug match.
+      debug: msg={{ match }}
+      tags:
+        - debug
+
+- hosts: es_master
+  become: yes
+  any_errors_fatal: true
+
+  vars_files:
+    - vars/ursa.yml
+
+  tasks:
+
+    - name: Check for existence of {{ source_index }} index. 
+      command: curl -XHEAD -i 'http://localhost:9200/{{ source_index }}'
+      register: indexExistsOutput
+
+    - name: Fail check | if index doesn't exist.
+      fail: msg="Attempted to extract records on an index that doesn't exist."
+      when: indexExistsOutput.stdout.find('404 Not Found') != -1
+
+- hosts: rabbit_mq_cluster
+  become: yes
+  any_errors_fatal: true
+
+  vars_files:
+    - vars/ursa.yml
+  vars:
+    should_install: false
+    config_rabbitmq_ha: true
+    enable_rabbitmq_clustering: true
+    rabbitmq_master: "{{ hostvars[groups['rabbit_master'][0]]['name'] }}"
+    rabbitmq_config:
+      - exchange_name: "{{ source_index }}-extract-ex"
+        type: topic
+        queue_name: "{{ source_index }}-extract-q"
+        durable: false
+        routing_key: ""
+  roles:
+    - role: rabbitmq
+  tags:
+    queue_creation

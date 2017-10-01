@@ -1,0 +1,34 @@
+---
+
+- name: Ensure {{ persistence_directory }} directory exists
+  file: path={{ persistence_directory }} state=directory
+
+- name: Ensure {{ data_directory }} directory exists
+  file: path={{ data_directory }} state=directory
+
+- name: Ensure {{ config_directory }} directory exists
+  file: path={{ config_directory }} state=directory
+
+- name: Ensure {{ logs_directory }} directory exists
+  file: path={{ logs_directory }} state=directory
+
+- name: Ensure {{ history_directory }} directory exists
+  file: path={{ history_directory }} state=directory
+
+- name: Ensure {{ parallel_directory }} directory exists
+  file: path={{ parallel_directory }} state=directory
+
+- name: Ensure {{ zone_downloads_directory }} directory exists
+  file: path={{ zone_downloads_directory }} state=directory
+
+- name: Ensure {{ zone_sorts_directory }} directory exists
+  file: path={{ zone_sorts_directory }} state=directory
+
+- name: Ensure {{ formatted_delta_directory }} directory exists
+  file: path={{ formatted_delta_directory }} state=directory
+
+- name: Ensure {{ project_folder }} directory exists
+  file: path={{ project_folder }} state=directory
+
+- name: Ensure {{ comm_directory }} directory exists
+  file: path={{ comm_directory }} state=directory

@@ -1,0 +1,54 @@
+{
+    "settings": {
+        "number_of_shards": {{ num_shards }},
+        "number_of_replicas": 2,
+        "index":{
+            "analysis":{
+               "analyzer":{
+                  "keylower":{
+                     "tokenizer":"keyword",
+                     "filter":"lowercase"
+                  }
+               }
+            }
+        }
+    },
+    "mappings": {
+        "A": {
+            "_source": {
+                "enabled": true
+            },
+            "properties": {
+                "domain_name": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "ip_address": {
+                    "type": "keyword",
+                    "store": true
+                },
+                "geo_ip": {
+                    "type": "nested",
+                    "properties": {
+                        "ip_address" : {
+                            "type" : "keyword",
+                        },
+                        "continent" : {
+                            "type" : "keyword",
+                        },
+                        "country" : {
+                            "type" : "keyword",
+                        },
+                        "location" : {
+                            "type" : "geo_point"
+                        }
+                    }
+                },
+                "geo_loc" : {
+                    "type" : "geo_point",
+                    "store": true
+                }
+            }
+        }
+    }
+}

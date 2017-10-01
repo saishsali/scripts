@@ -1,0 +1,21 @@
+
+set -e
+if [ $# -ne 2 ]; then
+    echo -e "ERROR: Improper arguments provided.\n"
+    echo -e "Usage: $0 TODAY YEST"
+    echo -e "\tTODAY\tToday's date as YYYY-MM-DD"
+    echo -e "\tYEST\tYesterday's date as YYYY-MM-DD"
+    exit 1
+fi
+
+cd "{{ parallel_directory }}"
+ZONE_DIR="{{ zone_downloads_directory }}"
+
+TODAY=$1
+YEST=$2
+FILE={{ dest_index }}-$TODAY-ingestion.txt
+
+for file in $(ls $ZONE_DIR/$TODAY); do
+    ZONE=$(echo $file | cut -d . -f1)
+    printf "./zone_ingestion.sh %s %s %s\n" $ZONE $TODAY $YESTERDAY >> $FILE
+done

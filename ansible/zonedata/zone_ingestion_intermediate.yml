@@ -1,0 +1,56 @@
+---
+#ensure yesterday's and today's directories exist
+- name: Set variables | zone
+  set_fact: today={{ outer_item }}
+
+- name: Ensure {{ formatted_delta_directory }}/{{ today }} directory exists
+  file: path={{ formatted_delta_directory }}/{{ today }} state=directory
+
+- name: Ensure {{ zone_sorts_directory }}/{{ today }} directory exists
+  file: path={{ zone_sorts_directory }}/{{ today }} state=directory
+
+- name: Ensure {{ comm_directory }}/{{ today }} directory exists
+  file: path={{ comm_directory }}/{{ today }} state=directory
+
+- name: Obtain previous day's date
+  shell: date -d "{{ today }} - 1 day" +%Y-%m-%d
+  register: yesterdays_date_output
+
+- name: Ser variables | yesterday
+  set_fact: yesterday={{ yesterdays_date_output.stdout }}
+
+- name: Ensure {{ formatted_delta_directory }}/{{ yesterday }} directory exists
+  file: path={{ formatted_delta_directory }}/{{ yesterday }} state=directory
+
+- name: Ensure {{ zone_sorts_directory }}/{{ yesterday }} directory exists
+  file: path={{ zone_sorts_directory }}/{{ yesterday }} state=directory
+
+- name: Ensure {{ comm_directory }}/{{ yesterday }} directory exists
+  file: path={{ comm_directory }}/{{ yesterday }} state=directory
+
+- name: Set variables | start_date_download_directory
+  set_fact: start_date_download_directory={{ zone_downloads_directory }}/{{ today }}
+
+#prepare list of commands for parallel to work on (hardcoding com to be worked on since beginning)
+- name: Create files of ingestion commands for {{ today }}
+  shell: {{ parallel_file_gen_path }} {{ today }} {{ yesterday }}
+
+- name: Calling bash script to start parallel ({{ today }})
+  shell: parallel -v --jobs 3 2>&1 < {{ parallel_directory }}/{{ dest_index }}-{{today}}-ingestion.txt
+  args:
+    executable: /bin/bash
+    chdir: "{{ config_directory }}"
+
+- name: Start script to check that formatted initial import is finished (rabbitMQ queue is empty)
+  shell: "python3 {{ check_rabbitmq_and_wait_script_path }} {{ initial_queue }}"
+
+- name: Start script to check that formatted delta import is finished (rabbitMQ queue is empty)
+  shell: "python3 {{ check_rabbitmq_and_wait_script_path }} {{ backfill_queue }}"
+
+- name: Update history file for {{ dest_index }}.main-history
+  lineinfile:
+    dest={{ history_directory }}/{{ dest_index }}.main-history
+    regexp='^{{ today }}'
+    insertafter=EOF
+    line='{{ today}}'
+    create=yes

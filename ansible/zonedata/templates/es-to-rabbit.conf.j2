@@ -1,0 +1,42 @@
+input {
+	elasticsearch{
+		hosts => [{% for host in groups['es_data_nodes'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+		index => "{{ source_index }}"
+		scroll => "10m"
+		size => 1000
+
+		#query => '< query >'
+
+		#query *part* by date range
+		#query => '{ "query": { "bool": { "filter": [ { "type": { "value": "NS" }}, { "range": { "registered_history" : { "gte": "2016-04-29 00:00:00", "lte": "2016-05-28 00:00:00", "time_zone": "-05:00", "format": "yyyy-MM-dd HH:mm:ss" } }} ] } }, "_source":["domain_name_exact"] }}'
+
+		#word segmentation query
+		#query => '{"query": {"bool": {"must_not": {"exists": {"field": "domain_name_segmented_length"}},"must": {"term": {"type": "NS"}}}},"_source": ["domain_name", "type"]}'
+
+		#pronounceability query (intial)
+		#query => '{"query": {"bool": {"must": {"exists": {"field": "domain_name_segmented_length"}},"must": {"term": {"type": "NS"}}}},"_source": ["domain_name", "type", "domain_name_segmented"]}'
+
+		#pronounceability query (remainder)
+		#query => '{ "query": { "bool": { "must": { "exists": { "field": "domain_name_segmented_length" } }, "must": { "term": { "type": "NS" } }, "must_not": { "exists": { "field": "domain_name_pronounceability" } } } }, "_source": ["domain_name", "type", "domain_name_segmented"]}'
+#'{ "query": {"bool": {"must":[{"match":{"type":"NS"}}, {"match":{"is_registered":"true"}} ] }}, "_source":["domain_name_exact"]}'
+		#all NS records
+		query => '{"query":{ "match" : { "type" : "NS" } }, "_source":["domain_name_exact"]}'
+	}
+}
+filter {
+}
+output {
+	rabbitmq{
+		exchange => "{{ exchange_name }}"
+	    exchange_type => "topic"
+	    durable => true
+	    persistent => false
+	    key => ""
+	    host => [{% for host in groups['rabbit_mq_cluster'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %}]
+	    workers => 1
+	    codec => json
+	    user => {{ rabbitmq_user }}
+	    password => {{ rabbitmq_pass }}
+	}
+	#stdout{ codec => "rubydebug"}
+}

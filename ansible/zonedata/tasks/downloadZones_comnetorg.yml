@@ -1,0 +1,84 @@
+---
+- hosts: master
+  any_errors_fatal: true
+
+  vars_files:
+    - ../vars/ursa.yml
+
+  tasks:
+
+    - name: Ensure {{ zone_downloads_directory }} directory=exists
+      file: path={{ zone_downloads_directory }} state=directory
+
+    - name: Get today's date
+      shell: date +%Y-%m-%d
+      register: todaysDateOutput
+
+    - name: Set variables | todays_date
+      set_fact: todays_date={{ todaysDateOutput.stdout }}
+
+    - name: Set variables | todays_download_directory
+      set_fact: todays_download_directory={{ zone_downloads_directory}}/{{ todays_date }}
+
+    - name: Obtain previous day's date
+      shell: date -d "{{ todays_date }} - 1 day" +%Y-%m-%d
+      register: yesterdays_date_output
+
+    - name: Set variables | yesterdays_date
+      set_fact: yesterdays_date={{ yesterdays_date_output.stdout }}
+
+    - name: Set variables | yesterdays_download_directory
+      set_fact: yesterdays_download_directory={{ zone_downloads_directory}}/{{ yesterdays_date }}
+
+    - name: Ensure daily download directory=exists
+      file: path={{ todays_download_directory }} state=directory
+
+    - name: Set variables
+      set_fact: com_zone_download_path={{ todays_download_directory }}/com.{{ todays_date }}.zone.gz
+
+    - name: Set variables
+      set_fact: net_zone_download_path={{ todays_download_directory }}/net.{{ todays_date }}.zone.gz
+
+    - name: Set variables
+      set_fact: org_zone_download_path={{ todays_download_directory }}/org.{{ todays_date }}.zone.gz
+
+    - name: Set variables
+      set_fact: bad_org_zone_download_path={{ todays_download_directory }}/org.zone.gz
+
+    - name: Check if org zone file needs to be renamed
+      stat: path={{ bad_org_zone_download_path }}
+      register: org_zone_file_exists
+
+    - name: Rename org file
+      command: mv {{ bad_org_zone_download_path }} {{ org_zone_download_path }}
+      when: org_zone_file_exists.stat.exists == True
+
+    - name: Check if today's compressed zone file, {{ com_zone_download_path }} exists
+      stat: path={{ com_zone_download_path }}
+      register: com_zone_file_exists
+
+    - name: Today's Zone File Not Found | Download today's zone file
+      shell: wget -O {{ com_zone_download_path }} ftp://{{ verisign_user }}:{{ verisign_pass }}@rz.verisign-grs.com/com.zone.gz
+      when: com_zone_file_exists.stat.exists == False
+      tags:
+        - download
+
+    - name: Check if today's compressed zone file, {{ net_zone_download_path }} exists
+      stat: path={{ net_zone_download_path }}
+      register: net_zone_file_exists
+
+    - name: Today's Zone File Not Found | Download today's zone file
+      shell: wget -O {{ net_zone_download_path }} ftp://{{ verisign_user }}:{{ verisign_pass }}@rz.verisign-grs.com/net.zone.gz
+      when: net_zone_file_exists.stat.exists == False
+      tags:
+        - download
+
+    - name: Rename zones
+      command: "{{bash_scripts_directory}}//sanitize_dates_single.sh {{ todays_download_directory }}"
+    
+    - name: List zones
+      command: ls -l "{{ todays_download_directory }}"
+      register: list_dir
+
+    - debug:
+        msg: "{{ list_dir.stdout_lines }}"

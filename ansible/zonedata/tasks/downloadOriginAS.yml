@@ -1,0 +1,60 @@
+---
+- hosts: master
+  any_errors_fatal: true
+
+  vars_files:
+    - ../vars/ursa.yml
+
+  tasks:
+
+    - name: Ensure {{ origin_as_downloads_directory }} directory=exists
+      file: path={{ origin_as_downloads_directory }} state=directory
+
+    - name: Get today's date
+      shell: date +%Y-%m-%d
+      register: dateOutput
+
+    - name: Set variables | todays_download_directory
+      set_fact: todays_download_directory={{ origin_as_downloads_directory}}
+
+    - name: Ensure daily download directory=exists
+      file: path={{ todays_download_directory }} state=directory
+
+    - name: Set variables | origin_as_download_path
+      set_fact: origin_as_download_path={{ todays_download_directory }}/originas-{{ dateOutput.stdout }}.bz2
+
+    - name: Check if today's compressed zone file, {{ origin_as_download_path }} exists
+      stat: path={{ origin_as_download_path }}
+      register: origin_as_download_path_exists
+
+    - name: Today's OriginAS file not found | Download today's OriginAS file
+      shell: wget -O {{ origin_as_download_path }} ftp://ftp.routeviews.org/dnszones/originas.bz2
+      when: origin_as_download_path_exists.stat.exists == False
+      tags:
+        - download
+
+# - hosts: pdns_resolvers
+#   become: yes
+#   any_errors_fatal: true
+
+#   vars_files:
+#     - ../vars/ursa.yml
+
+#   tasks:
+
+#     - name: Copy bindbackend.conf
+#       template: src=bindbackend.conf.j2
+#                 dest={{ powerdns_config_path }}bindbackend.conf
+#                 owner=root 
+#                 group=root 
+#                 mode=0644
+
+#     - name: copy OriginAS file from master to host
+#       copy: src={{ origin_as_download_path }} dest={{ powerdns_zone_path }}/originas.bz2
+
+#     - name: unzip OriginAS file
+#       command: bzip2 -dk originas.bz2 
+
+#     - name: reload pdns_resolvers
+#       command: pdns_control bind-reload-now originas
+

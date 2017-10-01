@@ -1,0 +1,71 @@
+#!/bin/bash
+# safety check for shell script
+set -e -o pipefail
+
+if [ $# -ne 4 ]; then
+    echo -e "ERROR: Improper arguments provided.\n"
+    echo -e "Usage: $0 ZONE TODAY YEST TYPE"
+    echo -e "\tZONE\tThe zone being ingested."
+    echo -e "\tTODAY\tToday's date as YYYY-MM-DD"
+    echo -e "\tYEST\tYesterday's date as YYYY-MM-DD"
+    echo -e "\tTYPE\tinitial or delta"
+    exit 1
+fi
+
+# Constants
+ZONE_DIR="{{ zone_downloads_directory }}"
+SORT_DIR="{{ zone_sorts_directory }}"
+COMM_DIR="{{ comm_directory }}"
+DELTA_DIR="{{ formatted_delta_directory }}"
+LOGS_DIR="{{ logs_directory }}"
+
+ZIPPED_SUFFIX="zone.gz"
+SORTED_SUFFIX="sorted"
+COMM_SUFFIX="comm"
+DELTA_SUFFIX="formatted-delta"
+
+ZONE=$1
+TODAY=$2
+YEST=$3
+TYPE=$4
+
+FILE1="$ZONE.$TODAY"
+FILE2="$ZONE.$YEST"
+
+ZIP1="$ZONE_DIR/$TODAY/$FILE1.$ZIPPED_SUFFIX"
+ZIP2="$ZONE_DIR/$YEST/$FILE2.$ZIPPED_SUFFIX"
+SORT1="$SORT_DIR/$TODAY/$FILE1.$SORTED_SUFFIX"
+SORT2="$SORT_DIR/$YEST/$FILE2.$SORTED_SUFFIX"
+COMM="$COMM_DIR/$TODAY/$FILE1.$COMM_SUFFIX"
+DELTA="$DELTA_DIR/$TODAY/$FILE1.$DELTA_SUFFIX"
+DELTA_ZIP="$DELTA_DIR/$TODAY/$FILE1.$DELTA_SUFFIX.gz"
+
+# We can use ZIP2's existence to check if it is initial ingestion or not
+
+if [ ! -f $ZIP1 ]; then
+    echo "Zone file doesn't exist -- $ZIP1"
+    exit 1
+fi
+
+if [ ! -f $DELTA_ZIP ]; then
+  # Sort zone files
+  if [ ! -f $SORT1 ]; then
+      zcat $ZIP1 | LC_ALL=C sort -S 20% --parallel=4 > $SORT1
+  fi
+  if [ $TYPE == "delta" ] && [ ! -f $SORT2 ]; then
+      zcat $ZIP2 | LC_ALL=C sort -S 20% --parallel=4 > $SORT2
+  fi
+  if [ $TYPE == "delta" ]; then
+    LC_ALL=C comm $SORT2 $SORT1 > $COMM
+    # delete yesterdays sort
+    rm $SORT2
+  else
+    LC_ALL=C comm <(echo "") $SORT1 > $COMM
+  fi
+  python3 {{ comm_format_script_path }} $TODAY $ZONE < $COMM > $DELTA
+  rm $COMM
+  gzip --best $DELTA
+else
+  gzip -t $DELTA_ZIP
+  exit $?
+fi

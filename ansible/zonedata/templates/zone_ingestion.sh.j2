@@ -1,0 +1,90 @@
+#!/bin/bash
+set -o pipefail
+# Constants
+DELTA_DIR="{{ formatted_delta_directory }}"
+LOGS_DIR="{{ logs_directory }}"
+
+DELTA_SUFFIX="formatted-delta.gz"
+
+ZONE=$1
+TODAY=$2
+YEST=$3
+
+FILE1="$ZONE.$TODAY"
+DELTA="$DELTA_DIR/$TODAY/$FILE1.$DELTA_SUFFIX"
+# History file
+HISTFILE="{{ history_directory }}/$ZONE.full-history"
+# RabbitMQ Exchanges
+INITIAL_EXCHANGE="{{ initial_exchange }}"
+DELTA_EXCHANGE="{{ backfill_exchange }}"
+
+ZONE=$1
+TODAY=$2
+YESTDATE=$3
+
+cd "{{ config_directory }}"
+# Check if history file exists
+if [ -f $HISTFILE ]; then
+    # DELTA IMPORT
+    # Create delta
+    bash ./create_deltas.sh $ZONE $TODAY $YESTDATE "delta"
+    if [ $? -ne 0 ];
+      then
+        echo "DELTA - delta_creation failure" | mail -s "$ZONE - $TODAY Ingestion fail."  dnsanalyticsofficial@gmail.com
+        exit 1
+    fi
+    # Last day processed
+    LASTPROC=$(tail -n 1 $HISTFILE)
+    # Check for improper input date in import sequence
+    if [ $YESTDATE != $LASTPROC ];
+      then
+        echo "Improper input date in import sequence"
+        exit 1
+    fi
+
+    # Suspicious file size check.
+    DUOUT=$(du -b $DELTA)
+    SIZE=$(echo $DUOUT | cut -d " " -f 1)
+    if [ -n $(echo $DELTA | grep com) ]; then
+      if [ $SIZE -ge 10000000 ]; then
+        echo "DELTA - Alert" | mail -s "$ZONE - $TODAY Suspicious."  dnsanalyticsofficial@gmail.com
+        exit 1
+      fi
+    elif [ -n $(echo $DELTA | grep "org\|net") ]; then
+      if [ $SIZE -ge 1000000 ]; then
+        echo "DELTA - Alert" | mail -s "$ZONE - $TODAY Suspicious."  dnsanalyticsofficial@gmail.com
+        exit 1
+      fi
+    fi
+
+    # Ingest Delta
+    zcat $DELTA | python3 {{ send_to_rabbit_ingestion_path }} $DELTA_EXCHANGE
+    # Check if delta_zone_ingestion completed correctly
+    if [ $? -ne 0 ];
+      then
+        echo "DELTA - delta_zone_ingestion failure" | mail -s "$ZONE - $TODAY Ingestion fail." edgar.samudiob@gmail.com dnsanalyticsofficial@gmail.com
+        exit 1
+    fi
+    # Append completed date to history file
+    echo $TODAY >> $HISTFILE
+else
+    # INITIAL IMPORT
+    # Create delta if needed
+    bash ./create_deltas.sh $ZONE $TODAY $YESTDATE "initial"
+    if [ $? -ne 0 ];
+      then
+        echo "INITIAL - delta_creation failure" | mail -s "$ZONE - $TODAY Ingestion fail."  dnsanalyticsofficial@gmail.com
+        exit 1
+    fi
+    # Ingest Delta
+    zcat $DELTA | python3 {{ send_to_rabbit_ingestion_path }} $INITIAL_EXCHANGE
+    # Check if initial_zone_ingestion completed correctly
+    if [ $? -ne 0 ]; then
+        echo "INITIAL - initial_zone_ingestion failure" | mail -s "$ZONE - $TODAY Ingestion fail." dnsanalyticsofficial@gmail.com
+        exit 1
+    fi
+    # Create history file
+    touch $HISTFILE
+    # Append completed date to history file
+    echo $TODAY >> $HISTFILE
+fi
