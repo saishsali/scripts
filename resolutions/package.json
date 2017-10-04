@@ -1,0 +1,23 @@
+{
+  "name": "ubuntu",
+  "version": "1.0.0",
+  "description": "",
+  "main": "resolver_dns.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "amqplib": "^0.5.0",
+    "deasync": "^0.1.9",
+    "elasticsearch": "^12.0.1",
+    "maxmind": "^2.0.3",
+    "request-json": "^0.6.1",
+    "sleep": "^5.1.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
