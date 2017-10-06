@@ -1,0 +1,5 @@
+---
+- hosts: pdns_recursors
+  become: yes
+  roles:
+    - pdns-recursor

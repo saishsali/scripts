@@ -1,0 +1,50 @@
+---
+
+# - name: Install public signing key for pdns
+#   apt_repository: repo="{{ pdns_auth_apt_repo }}"
+#                   state=present
+#   tags: pdns_repo
+
+- name: Install public signing key pdns-recursor
+  apt_repository: repo="{{ pdns_rec_apt_repo }}"
+                  state=present
+  tags: pdns_repo
+
+- name: Add pdns repo key
+  apt_key: url="{{ pdns_repo_key }}" 
+           state=present
+  tags: pdns_repo
+
+# - name: Set up pdns preferences.d file
+#   template: src=templates/pdns.j2
+#             dest={{ pdns_preferences }} 
+#             owner=root 
+#             group=root 
+#             mode=0775
+
+# - name: Install pdns-server (pdns)
+#   apt: pkg=pdns-server
+#        update_cache=yes 
+#        state=present
+#   tags: pdns_install
+
+# - name: Install pdns-backend-remote
+#   apt: pkg=pdns-backend-remote
+#        state=present
+#   tags: pdns_install
+
+# - name: Stop pdns
+#   service: name=pdns
+#            state=stopped
+#   ignore_errors: yes
+
+- name: Install pdns-recursor
+  apt: pkg=pdns-recursor
+       update_cache=yes 
+       state=present
+  tags: pdns_install
+
+- name: Stop pdns-recursor
+  service: name=pdns-recursor
+           state=stopped
+  ignore_errors: yes

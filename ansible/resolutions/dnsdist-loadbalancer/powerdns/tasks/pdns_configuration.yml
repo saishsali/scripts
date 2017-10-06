@@ -1,0 +1,32 @@
+---
+
+# - name: Copy pdns-server configuration (pdns.conf)
+#   template: src=pdns.conf.j2
+#             dest={{ pdns_config_dir }}pdns.conf
+#             owner=root 
+#             group=root 
+#             mode=0644
+
+- name: Copy pdns-recursor configuration (recursor.conf)
+  template: src=recursor.conf.j2
+            dest={{ pdns_config_dir }}recursor.conf
+            owner=root 
+            group=root 
+            mode=0644
+
+# - name: Restart pdns before upgrading
+#   service: name=pdns
+#            state=restarted
+#   ignore_errors: yes
+
+- name: Restart pdns-recursor before upgrading
+  service: name=pdns-recursor
+           state=restarted
+  ignore_errors: yes
+
+- name: Update resolv.conf
+  template: src=resolv.conf.j2
+            dest={{ resolv_conf_path }}
+            owner=root 
+            group=root 
+            mode=0644

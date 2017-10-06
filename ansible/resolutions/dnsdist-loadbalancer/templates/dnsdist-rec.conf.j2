@@ -1,0 +1,11 @@
+{% for host in groups['pdns_recursors'] %}
+newServer({address="{{ host }}:53", checkType="A", checkName="google.com.", retries=3, weight=1, name="{{ server_name }}"})
+{% endfor %}
+
+setLocal("0.0.0.0:53", true, true)
+addLocal("0.0.0.0:53", true, true)
+
+setKey("plaintext")
+controlSocket("127.0.0.1:8183")
+setServerPolicy(roundrobin)
+webserver("0.0.0.0:8083", "1234")

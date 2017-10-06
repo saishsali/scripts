@@ -1,0 +1,29 @@
+---
+# defaults file for pdns role
+
+pdns_auth_apt_repo: "deb [arch=amd64] http://repo.powerdns.com/ubuntu trusty-auth-40 main"
+pdns_rec_apt_repo: "deb [arch=amd64] http://repo.powerdns.com/ubuntu trusty-rec-40 main"
+
+pdns_preferences: "/etc/apt/preferences.d/pdns"
+
+pdns_repo_key: "https://repo.powerdns.com/FD380FBB-pub.asc"
+
+pdns_config_dir: "/etc/powerdns/"
+#to set when called
+pdns_auth_daemon: "yes"
+pdns_auth_distrubutor_threads: "8"
+pdns_auth_guardian: "yes"
+pdns_auth_launch: "remote"
+pdns_auth_extra: "remote-connection-string=http:url=http://192.168.0.120:8080/api"
+pdns_auth_local_port: "1053"
+pdns_auth_recursor_ip: "192.168.0.184"
+pdns_rec_client_tcp_timeout: "10"
+pdns_rec_daemon: "yes"
+pdns_rec_forward_zones_recurse: ".=127.0.0.1:1053"
+pdns_rec_network_timeout: "15000"
+pdns_rec_max_total_msec: "15000"
+pdns_auth_master: "yes"
+pdns_auth_retrieval_threads: "4"
+
+resolv_conf_path: "/etc/resolv.conf"
+dnsdist_conf_path: "/etc/dnsdist/dnsdist.conf"

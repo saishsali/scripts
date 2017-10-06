@@ -1,0 +1,28 @@
+---
+  - name: Stop dnsdist before update
+    service:
+      name: dnsdist
+      state: stopped
+    ignore_errors: yes
+
+  - name: Copy dnsdist configuration for auth servers (dnsdist-auth.conf)
+    template: src=dnsdist-auth.conf.j2
+              dest={{ dnsdist_auth_conf_path }}
+              owner=root
+              group=root
+              mode=0644
+
+  - name: Copy dnsdist configuration for recursive servers (dnsdist-rec.conf)
+    template: src=recursor.conf.j2
+              dest={{ dnsdist_rec_conf_path }}
+              owner=root
+              group=root
+              mode=0644
+
+  - name: Start dnsdist-rec
+    shell: "dnsdist --config {{ dnsdist_rec_conf_path }} --daemon"
+    become: yes
+
+  - name: Start dnsdist-auth
+    shell: "dnsdist --config {{ dnsdist_auth_conf_path }} --daemon"
+    become: yes

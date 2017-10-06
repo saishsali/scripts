@@ -52,9 +52,8 @@ parallel_directory: "{{ config_directory }}/parallel"
 
 #Project files
 parallel_file_gen_path: "{{ config_directory }}/parallel_file_gen.sh"
-comm_format_script_path: "{{ process_directory }}/comm_format.py"
+comm_format_script_path: "{{ process_directory }}/comm-format.py"
 send_to_rabbit_ingestion_path: "{{ process_directory }}/ingestion-blocking.py"
-print_previous_days_date_script_path: "{{ process_directory }}/printPreviousDaysDate.js"
 print_dates_in_range_script_path: "{{ process_directory }}/printDatesInRange.js"
 check_rabbitmq_and_wait_script_path: "{{ process_directory }}/wait-until-empty.py"
 

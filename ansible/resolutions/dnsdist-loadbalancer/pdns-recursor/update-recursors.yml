@@ -1,0 +1,11 @@
+---
+- hosts: pdns_recursor
+  name: Gathering facts
+  tasks: []
+
+- hosts: pdns_resolvers
+  become: yes
+  vars_files:
+   - "defaults/main.yml"
+  tasks:
+    - include: tasks/pdns_configuration.yml

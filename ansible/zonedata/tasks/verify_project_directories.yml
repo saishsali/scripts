@@ -30,5 +30,8 @@
 - name: Ensure {{ project_folder }} directory exists
   file: path={{ project_folder }} state=directory
 
+- name: Ensure {{ process_directory }} directory exists
+  file: path={{ process_directory }} state=directory
+
 - name: Ensure {{ comm_directory }} directory exists
   file: path={{ comm_directory }} state=directory

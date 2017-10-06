@@ -1,0 +1,5 @@
+dnsdist_apt_repo: "deb [arch=amd64] http://repo.powerdns.com/ubuntu trusty-dnsdist-master main"
+dnsdist_auth_conf_path: "/etc/dnsdist/dnsdist-auth.conf"
+dnsdist_rec_conf_path: "/etc/dnsdist/dnsdist-rec.conf"
+pdns_repo_key: "https://repo.powerdns.com/FD380FBB-pub.asc"
+dnsdist_preferences: "/etc/apt/preferences.d/dnsdist"

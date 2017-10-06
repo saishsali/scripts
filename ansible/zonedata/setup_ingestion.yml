@@ -22,6 +22,52 @@
       register: verify_project_directories_result
       failed_when: "'FAILED' in verify_project_directories_result.stderr"
 
+    - name: Update repositories cache and install "pip3" package
+      apt:
+        name: python3-pip
+        update_cache: yes
+
+    - name: Install pika
+      pip: 
+        executable: pip3
+        name: pika
+
+    - name: Add Node.js PPA
+      shell: 'curl --silent --location https://deb.nodesource.com/setup_"{{ nodejs_version }}" | bash -'
+
+    - name: Install Node.js
+      apt:
+        name: nodejs
+        update_cache: yes
+        state: latest
+
+    - name: npm Update
+      npm:
+        name: npm
+        global: yes
+        state: latest
+        registry: https://registry.npmjs.org
+
+    - name: Copy comm-format.py to process directory
+      copy:
+        src: scripts/comm-format.py
+        dest: "{{ comm_format_script_path }}"
+
+    - name: Copy ingestion-blocking.py to process directory
+      copy:
+        src: scripts/ingestion-blocking.py
+        dest: "{{ send_to_rabbit_ingestion_path }}"
+
+    - name: Copy printDatesInRange.js to process directory
+      copy:
+        src: scripts/printDatesInRange.js
+        dest: "{{ print_dates_in_range_script_path }}"
+
+    - name: Copy wait-until-empty.py to process directory
+      copy:
+        src: scripts/wait-until-empty.py
+        dest: "{{ check_rabbitmq_and_wait_script_path }}"
+
     - name: Update bash script for delta creation.
       template: src=templates/create_deltas.sh.j2
                 dest={{ config_directory }}/create_deltas.sh

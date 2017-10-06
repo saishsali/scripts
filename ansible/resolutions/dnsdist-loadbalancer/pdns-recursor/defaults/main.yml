@@ -1,0 +1,24 @@
+---
+# defaults file for pdns role
+
+pdns_auth_apt_repo: "deb [arch=amd64] http://repo.powerdns.com/ubuntu trusty-auth-40 main"
+pdns_rec_apt_repo: "deb [arch=amd64] http://repo.powerdns.com/ubuntu trusty-rec-40 main"
+
+pdns_preferences: "/etc/apt/preferences.d/pdns"
+
+pdns_repo_key: "https://repo.powerdns.com/FD380FBB-pub.asc"
+
+pdns_config_dir: "/etc/powerdns"
+
+client_tcp_timeout: 10
+daemon: "yes"
+network_timeout: 4000
+max_total_msec: 0
+forward_zones_file: /etc/powerdns/forward_zones.txt
+max_cache_ttl: 50
+max_mthreads: 32768
+max_negative_ttl: 60
+threads: 16
+
+resolv_conf_path: "/etc/resolv.conf"
+dnsdist_conf_path: "/etc/dnsdist/dnsdist.conf"
