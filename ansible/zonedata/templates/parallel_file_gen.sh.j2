@@ -15,7 +15,14 @@ TODAY=$1
 YEST=$2
 FILE={{ dest_index }}-$TODAY-ingestion.txt
 
+if [ -e $FILE ]; then
+   rm $FILE
+fi
+
+touch $FILE
+
 for file in $(ls $ZONE_DIR/$TODAY); do
     ZONE=$(echo $file | cut -d . -f1)
-    printf "./zone_ingestion.sh %s %s %s\n" $ZONE $TODAY $YESTERDAY >> $FILE
+    LINE="./zone_ingestion.sh $ZONE $TODAY $YEST"
+    echo $LINE >> $FILE
 done
