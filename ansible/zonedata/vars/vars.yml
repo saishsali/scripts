@@ -56,6 +56,7 @@ comm_format_script_path: "{{ process_directory }}/comm-format.py"
 send_to_rabbit_ingestion_path: "{{ process_directory }}/ingestion-blocking.py"
 print_dates_in_range_script_path: "{{ process_directory }}/printDatesInRange.js"
 check_rabbitmq_and_wait_script_path: "{{ process_directory }}/wait-until-empty.py"
+date_functions_script_path: "{{ process_directory }}/dateFunctions.js"
 
 #Logstash
 logstash_bin_directory: "/opt/logstash/bin/logstash"

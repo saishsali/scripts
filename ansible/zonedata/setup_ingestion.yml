@@ -53,6 +53,11 @@
         src: scripts/comm-format.py
         dest: "{{ comm_format_script_path }}"
 
+    - name: Copy dateFunctions.js to process directory
+      copy:
+        src: scripts/dateFunctions.js
+        dest: "{{ date_functions_script_path }}"
+
     - name: Copy ingestion-blocking.py to process directory
       copy:
         src: scripts/ingestion-blocking.py
