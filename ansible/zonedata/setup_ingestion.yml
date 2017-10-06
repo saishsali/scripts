@@ -27,6 +27,10 @@
         name: python3-pip
         update_cache: yes
 
+    - name: Install GNU parallel
+      apt:
+        name: parallel
+
     - name: Install pika
       pip: 
         executable: pip3
