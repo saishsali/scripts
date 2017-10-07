@@ -1,5 +1,5 @@
 {% for host in groups['pdns_recursors'] %}
-newServer({address="{{ hostvars[host]['ansible_eth0']['ipv4']['address'] }}:53", checkType="A", checkName="google.com.", retries=3, weight=1, name="{{ hostvars[host]['server_name'] }}"})
+newServer({address="{{ hostvars[host].inventory_hostname }}:53", checkType="A", checkName="google.com.", retries=3, weight=1, name="{{ hostvars[host].server_name }}"})
 {% endfor %}
 
 setLocal("0.0.0.0:53", true, true)
