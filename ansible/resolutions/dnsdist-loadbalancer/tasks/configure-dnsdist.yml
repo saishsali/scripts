@@ -15,7 +15,7 @@
     become: yes
 
   - name: Copy dnsdist configuration for recursive servers (dnsdist-rec.conf)
-    template: src=recursor.conf.j2
+    template: src=dnsdist-rec.conf.j2
               dest={{ dnsdist_rec_conf_path }}
               owner=root
               group=root
