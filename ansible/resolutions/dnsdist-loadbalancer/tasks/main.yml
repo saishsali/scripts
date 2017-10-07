@@ -21,6 +21,8 @@
     pkg: dnsdist
     update_cache: yes
     state: present
+    allow_unauthenticated: yes
+    install_recommends: yes
   become: yes
 
 - name: Stop dnsdist before update
