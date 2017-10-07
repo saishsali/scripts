@@ -4,6 +4,7 @@
       name: dnsdist
       state: stopped
     ignore_errors: yes
+    become: yes
 
   - name: Copy dnsdist configuration for auth servers (dnsdist-auth.conf)
     template: src=dnsdist-auth.conf.j2
@@ -11,6 +12,7 @@
               owner=root
               group=root
               mode=0644
+    become: yes
 
   - name: Copy dnsdist configuration for recursive servers (dnsdist-rec.conf)
     template: src=recursor.conf.j2
@@ -18,6 +20,7 @@
               owner=root
               group=root
               mode=0644
+    become: yes
 
   - name: Start dnsdist-rec
     shell: "dnsdist --config {{ dnsdist_rec_conf_path }} --daemon"
