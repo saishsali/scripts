@@ -21,5 +21,7 @@
     pkg: pdns-recursor
     update_cache: yes
     state: present
+    allow_unauthenticated: yes
+    install_recommends: yes
 
 - include: configure-recursor.yml
