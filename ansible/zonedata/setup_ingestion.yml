@@ -1,7 +1,7 @@
 ---
 #This playbook is responsible for the ingestion of an initial import.
 
-- hosts: master:rabbitmq_master:es_master:ingesters
+- hosts: master:rabbitmq_master:es_master:logstash
   name: Gathering facts
   tasks: []
 
@@ -162,9 +162,9 @@
   roles:
     - role: rabbitmq
 
-- hosts: ingesters
+- hosts: logstash
   tags:
-    - logstash-ingesters
+    - logstash-logstash
   become: yes
   #any_errors_fatal: true
 
