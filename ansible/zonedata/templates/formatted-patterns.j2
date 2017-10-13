@@ -1,8 +1,8 @@
-REGISTEREDORUPDATEDNSRECORD %{ZONE:zone}\s%{DATE:date}\s%{REGSIGN:sign}\s%{DOMAINNAME:domain_name}\s%{NSTYPE:type}\s%{NAMESERVERS:name_servers}
+REGISTEREDORUPDATEDNSRECORD ^%{ZONE:zone}\s%{DATE:date}\s%{REGSIGN:sign}\s%{DOMAINNAME:domain_name}\s%{NSTYPE:type}\s%{NAMESERVERS:name_servers}$
 
-REGISTEREDORUPDATEDARECORD %{ZONE:zone}\s%{DATE:date}\s%{REGSIGN:sign}\s%{DOMAINNAME:domain_name}\s%{ATYPE:type}\s%{IP:ip_address}
+REGISTEREDORUPDATEDARECORD ^%{ZONE:zone}\s%{DATE:date}\s%{REGSIGN:sign}\s%{DOMAINNAME:domain_name}\s%{ATYPE:type}\s%{IP:ip_address}$
 
-DEREGISTEREDRECORD %{ZONE:zone}\s%{DATE:date}\s%{DEREGSIGN:sign}\s%{DOMAINNAME:domain_name}\s%{TYPE:type}
+DEREGISTEREDRECORD ^%{ZONE:zone}\s%{DATE:date}\s%{DEREGSIGN:sign}\s%{DOMAINNAME:domain_name}\s%{TYPE:type}$
 
 
 PREFIX [^\s]*
