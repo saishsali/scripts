@@ -33,7 +33,7 @@
 
 #prepare list of commands for parallel to work on (hardcoding com to be worked on since beginning)
 - name: Create files of ingestion commands for {{ today }}
-  shell: {{ parallel_file_gen_path }} {{ today }} {{ yesterday }}
+  shell: "{{ parallel_file_gen_path }} {{ today }} {{ yesterday }}"
 
 - name: Calling bash script to start parallel ({{ today }})
   shell: parallel -v --jobs 3 2>&1 < {{ parallel_directory }}/{{ dest_index }}-{{today}}-ingestion.txt

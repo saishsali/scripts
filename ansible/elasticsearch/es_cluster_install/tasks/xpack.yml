@@ -2,7 +2,7 @@
 
 - name: xpack | Uninstall xpack
   become: yes
-  command: bin/elasticsearch-plugin remove x-pack
+  command: /usr/share/elasticsearch/bin/elasticsearch-plugin remove x-pack
   args:
     chdir: "{{ elasticsearch_home_dir }}"
   notify: Restart Elasticsearch
@@ -10,7 +10,7 @@
 
 - name: xpack | Install xpack
   become: yes
-  command: bin/elasticsearch-plugin install x-pack
+  command: /usr/share/elasticsearch/bin/elasticsearch-plugin install x-pack
   args:
     chdir: "{{ elasticsearch_home_dir }}"
   notify: Restart Elasticsearch

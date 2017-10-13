@@ -4,7 +4,7 @@ import time
 
 q = sys.argv[1]
 
-host = '192.168.0.26'
+host = '192.168.1.80'
 user = 'rabbitmqadmin'
 passwd = 'rabbitmqadmin'
 

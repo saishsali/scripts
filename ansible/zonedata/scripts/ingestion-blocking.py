@@ -6,7 +6,7 @@ import json
 # Which exchange should the data be sent to?
 output_exchange = sys.argv[1]
 
-host = '192.168.0.26'
+host = '192.168.1.80'
 credentials = pika.PlainCredentials('rabbitmqadmin', 'rabbitmqadmin')
 parameters = pika.ConnectionParameters(credentials=credentials, host=host)
 

@@ -9,7 +9,7 @@ elasticsearch_index_queue: -1
 elasticsearch_get_queue: -1
 elasticsearch_heap_size: 3g
 elasticsearch_network_host: 0.0.0.0
-elasticsearch_discovery_zen_ping_unicast_hosts: 192.168.0.204 # "[\"{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}\"]"
+elasticsearch_discovery_zen_ping_unicast_hosts: 192.168.1.165 # "[\"{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}\"]"
 elasticsearch_master: "{{ elasticsearch_discovery_zen_ping_unicast_hosts }}"
 
 xpack_enabled: true
