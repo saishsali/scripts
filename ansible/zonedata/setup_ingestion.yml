@@ -1,7 +1,7 @@
 ---
 #This playbook is responsible for the ingestion of an initial import.
 
-- hosts: master:rabbitmq_master:es_master:ingesters
+- hosts: master:rabbit_master:es_master:logstash
   name: Gathering facts
   tasks: []
 
@@ -10,7 +10,7 @@
   any_errors_fatal: true
 
   vars_files:
-    - vars/ursa.yml
+    - vars/vars.yml
 
   tasks:
 
@@ -32,12 +32,12 @@
         name: parallel
 
     - name: Install pika
-      pip: 
+      pip:
         executable: pip3
         name: pika
 
     - name: Add Node.js PPA
-      shell: 'curl --silent --location https://deb.nodesource.com/setup_"{{ nodejs_version }}" | bash -'
+      shell: 'curl --silent --location https://deb.nodesource.com/setup_7.x | bash -'
 
     - name: Install Node.js
       apt:
@@ -99,14 +99,30 @@
                 mode=0755
 
     - name: Set variable | es_master_ip
-      set_fact: es_master_ip="{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}"
+      # set_fact: es_master_ip="{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}"
+      set_fact: es_master_ip="192.168.1.165"
 
-    - name: Create Elasticsearch index - {{ dest_index }}
+    # - name: Get new alias name
+    #   shell: 'python3 /home/ubuntu/scripts/timestamp.py http://{{ es_master_ip }}:9200/*/_alias/{{ dest_index }} {{ dest_index }}'
+    #   # shell: 'python3 /home/ubuntu/scripts/timestamp.py {{ es_master_ip }} {{ dest_index }}'
+    #   register: alias_name
+
+    # - name: Set alias name
+    #   set_fact: alias={{ alias_name.stdout_lines[0] }}
+
+    - name: Create Elasticsearch index
       uri:
         url: http://{{ es_master_ip }}:9200/{{ dest_index }}/
         method: PUT
         body: "{{ lookup('template', 'templates/zoneIndexMapping.json.j2') }}"
         body_format: json
+
+    # - name: Create Elasticsearch index alias - {{ dest_index }}
+    #   uri:
+    #     url: http://{{ es_master_ip }}:9200/_aliases
+    #     method: POST
+    #     body: "{{ lookup('template', 'templates/zoneIndexAliasing.json.j2') }}"
+    #     body_format: json
 
 - hosts: rabbit_master
   tags:
@@ -115,7 +131,7 @@
   any_errors_fatal: true
 
   vars_files:
-    - vars/ursa.yml
+    - vars/vars.yml
 
   tasks:
 
@@ -142,7 +158,7 @@
   any_errors_fatal: true
 
   vars_files:
-    - vars/ursa.yml
+    - vars/vars.yml
 
   tasks:
 
@@ -162,14 +178,14 @@
   roles:
     - role: rabbitmq
 
-- hosts: ingesters
+- hosts: logstash
   tags:
     - logstash-ingesters
   become: yes
   #any_errors_fatal: true
 
   vars_files:
-    - vars/ursa.yml
+    - vars/vars.yml
 
   tasks:
 
@@ -185,8 +201,12 @@
     - name: Set variables | initial_logstash_config_directory
       set_fact: initial_logstash_config_directory="/etc/{{ logstash_initial_service }}/conf.d"
 
+    # - debug: var=initial_logstash_config_directory
+
     - name: Set variables | delta_logstash_config_directory
       set_fact: delta_logstash_config_directory="/etc/{{ logstash_delta_service }}/conf.d"
+
+    # - debug: var=delta_logstash_config_directory
 
     - name: Update Logstash Configuration for intial import
       template: src=templates/formatted-initial-import.conf.j2

@@ -5,8 +5,7 @@
   become: yes
   any_errors_fatal: true
   vars_files:
-    - vars/ursa.yml
-
+    - vars/vars.yml
   tasks:
 
 #Obtain basic information about today's download/ingestion.
@@ -65,6 +64,67 @@
       set_fact: list_of_dates={{ datesOutput.stdout_lines }}
       when: historyFileExists.stat.exists == false
 
+    # - name: Set variable | es_master_ip
+    #   # set_fact: es_master_ip="{{ hostvars[groups['es_master'][0]]['ansible_eth0']['ipv4']['address'] }}"
+    #   set_fact: es_master_ip="192.168.1.165"
+
+    # - name: Get new alias name
+    #   shell: 'python3 /home/ubuntu/scripts/timestamp.py http://{{ es_master_ip }}:9200/*/_alias/{{ dest_index }} {{ dest_index }}'
+    #   register: alias_name
+
+    # - name: Set alias name
+    #   set_fact: alias={{ alias_name.stdout_lines[0] }}
+
+    # - name: Create Elasticsearch index
+    #   uri:
+    #     url: http://{{ es_master_ip }}:9200/{{ alias }}/
+    #     method: PUT
+    #     body: "{{ lookup('template', 'templates/zoneIndexMapping.json.j2') }}"
+    #     body_format: json
+
+    # - name: Set new alias
+    #   shell: 'python3 /home/ubuntu/scripts/alias.py http://{{ es_master_ip }}:9200/*/_alias/{{ dest_index }} http://{{ es_master_ip }}:9200/_aliases {{ dest_index }} {{ alias }}'
+    #   # shell: 'python3 /home/ubuntu/scripts/alias.py {{ es_master_ip }} {{ dest_index }} {{ alias }}'
+    #   register: attempt
+
+    # - name: Set attempt
+    #   set_fact: num_attempt={{ attempt.stdout_lines[0] }}
+
+    # - name: set set
+    #   vars:
+    #     current_index = {{ alias }}
+
+
+    # - name: Set current index
+    #   set_fact: current_index={{ alias }}
+
+    # - debug: var=current_index
+
+    # - name: Set variables | initial_logstash_config_directory
+    #   set_fact: initial_logstash_config_directory="/etc/{{ logstash_initial_service }}/conf.d"
+
+    # - debug: var=initial_logstash_config_directory
+
+    # - name: Set variables | delta_logstash_config_directory
+    #   set_fact: delta_logstash_config_directory="/etc/{{ logstash_delta_service }}/conf.d"
+
+    # - debug: var=delta_logstash_config_directory
+
+    # - name: Update Logstash Configuration for intial import
+    #   template: src=templates/formatted-initial-import.conf.j2
+    #             dest={{ initial_logstash_config_directory }}/formatted-initial-import.conf
+    #             owner={{ logstash_user }}
+    #             group={{ logstash_user }}
+    #             mode=0644
+
+    # - name: Update Logstash Configuration for delta update
+    #   template: src=templates/formatted-delta-update.conf.j2
+    #             dest={{ delta_logstash_config_directory }}/formatted-delta-update.conf
+    #             owner={{ logstash_user }}
+    #             group={{ logstash_user }}
+    #             mode=0644
+
+
 #Verify that directories needed for ingestion exist.
 
     - include: zone_ingestion_intermediate.yml
@@ -73,3 +133,8 @@
       ignore_errors: yes
       loop_control:
         loop_var: outer_item
+
+    # - name: Set new alias
+    #   shell: 'python3 /home/ubuntu/scripts/delete_alias.py http://{{ es_master_ip }}:9200/*/_alias/{{ dest_index }} http://{{ es_master_ip }}:9200/_aliases {{ dest_index }} {{ alias }}'
+    #   # shell: 'python3 /home/ubuntu/scripts/alias.py {{ es_master_ip }} {{ dest_index }} {{ alias }}'
+    #   when: num_attempt == "2"
