@@ -1,5 +1,5 @@
 {% for host in groups['node_servers'] %}
-newServer({address="{{ host }}:1053", checkType="A", checkName="google.com.", retries=3, weight=1, name="{{ server_name }}"})
+newServer({address="{{ hostvars[host].inventory_hostname }}:1053", checkType="A", checkName="google.com.", retries=3, weight=1, name="{{ hostvars[host].server_name }}"})
 {% endfor %}
 
 setLocal("0.0.0.0:1053", true, true)

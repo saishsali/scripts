@@ -180,7 +180,7 @@
 
 - hosts: logstash
   tags:
-    - logstash-ingesters
+    - logstash-logstash
   become: yes
   #any_errors_fatal: true
 

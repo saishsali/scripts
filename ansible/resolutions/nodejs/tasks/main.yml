@@ -3,10 +3,14 @@
   apt:
     name: git
     update_cache: yes
+    allow_unauthenticated: yes
+    install_recommends: yes
 
 - name: Install Memcached
   apt:
     name: memcached
+    allow_unauthenticated: yes
+    install_recommends: yes
 
 - name: Ensure Memcached is started and set to run on startup.
   service:
@@ -29,6 +33,8 @@
     name: nodejs
     update_cache: yes
     state: latest
+    allow_unauthenticated: yes
+    install_recommends: yes
 
 - name: npm Update
   npm:

@@ -21,11 +21,15 @@
     pkg: dnsdist
     update_cache: yes
     state: present
+    allow_unauthenticated: yes
+    install_recommends: yes
+  become: yes
 
 - name: Stop dnsdist before update
   service:
     name: dnsdist
     state: stopped
   ignore_errors: yes
+  become: yes
 
 - include: configure-dnsdist.yml
