@@ -5,7 +5,7 @@ zone: ""
 dest_index: "dns-data"
 
 todays_date: "{{ ansible_date_time.date }}"
-batch_size: 5000
+batch_size: 10000
 prefetch_count: 100
 
 #ElasticSearch parameters
